@@ -15,7 +15,7 @@ public class MockController {
     public Map<String, Object> getMockData() {
         Map<String, Object> data = new HashMap<>();
         data.put("status", "success");
-        data.put("message", "App is deployed and running!");
+        data.put("message", "App is deployed and running! Yay!");
         data.put("timestamp", System.currentTimeMillis());
         return data;
     }
