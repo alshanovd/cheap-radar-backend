@@ -29,7 +29,7 @@ public class SearchController {
             try {
                 Thread.sleep(2000);
                 messagingTemplate.convertAndSend("/topic/search/" + mockedSearchId, 
-                    Map.of("status", "processing", "message", "Found 3 new flights..."));
+                    (Object) Map.of("status", "processing", "message", "Found 3 new flights..."));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
