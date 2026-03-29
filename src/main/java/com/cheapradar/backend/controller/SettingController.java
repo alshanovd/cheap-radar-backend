@@ -1,28 +1,36 @@
 package com.cheapradar.backend.controller;
 
+import com.cheapradar.backend.dto.SettingsRequest;
+import com.cheapradar.backend.dto.SettingsResponse;
+import com.cheapradar.backend.service.SettingService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/setting")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class SettingController {
+    private final SettingService settingService;
 
     @GetMapping
-    public ResponseEntity<?> getSettings() {
-        // Mock settings object
-        return ResponseEntity.ok(Map.of(
-                "theme", "dark",
-                "notifications", true,
-                "currency", "USD"
-        ));
+    public ResponseEntity<SettingsResponse> getSettings() {
+        log.info("Received request to get settings");
+        SettingsResponse response = settingService.getSettings();
+        log.info("Returning settings: {}", response);
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping
-    public ResponseEntity<?> saveSettings(@RequestBody Map<String, Object> settings) {
-        // Mock save
-        return ResponseEntity.ok(Map.of("message", "Settings updated successfully", "saved", settings));
+    @PatchMapping
+    public ResponseEntity<SettingsResponse> saveSettings(@RequestBody SettingsRequest settings) {
+        log.info("Received request to save settings: {}", settings);
+        SettingsResponse response = settingService.saveSettings(settings);
+        log.info("Returning settings: {}", response);
+        return ResponseEntity.ok(response);
     }
 }
