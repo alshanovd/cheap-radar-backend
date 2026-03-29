@@ -26,7 +26,7 @@ public class SettingController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping
+    @PatchMapping
     public ResponseEntity<SettingsResponse> saveSettings(@RequestBody SettingsRequest settings) {
         log.info("Received request to save settings: {}", settings);
         SettingsResponse response = settingService.saveSettings(settings);
