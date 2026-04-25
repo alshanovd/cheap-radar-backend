@@ -1,10 +1,10 @@
-package com.cheapradar.backend.client.serp;
+package com.cheapradar.backend.client.google;
 
 import com.cheapradar.backend.client.SearchClient;
 import com.cheapradar.backend.client.dto.ClientSearchRequest;
 import com.cheapradar.backend.client.dto.ClientSearchResponse;
-import com.cheapradar.backend.client.serp.mapping.ClientSearchResponseMapper;
-import com.cheapradar.backend.client.serp.model.SerpSearchResponse;
+import com.cheapradar.backend.client.google.mapping.ClientSearchResponseMapper;
+import com.cheapradar.backend.client.google.model.GoogleSearchResponse;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
@@ -17,14 +17,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-public class SerpSearchClient implements SearchClient {
+public class GoogleSearchClient implements SearchClient {
     private static final String DATE_FORMAT = "yyyy-MM-dd";
 
     private final RestClient restClient;
-    private final SerpClientProperties properties;
+    private final GoogleClientProperties properties;
     private final ClientSearchResponseMapper clientSearchResponseMapper;
 
-    public SerpSearchClient(SerpClientProperties properties, ClientSearchResponseMapper clientSearchResponseMapper) {
+    public GoogleSearchClient(GoogleClientProperties properties, ClientSearchResponseMapper clientSearchResponseMapper) {
         this.clientSearchResponseMapper = clientSearchResponseMapper;
         this.properties = properties;
         this.restClient = RestClient.builder()
@@ -64,11 +64,11 @@ public class SerpSearchClient implements SearchClient {
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        List<SerpSearchResponse> allResponses = futures.stream()
+        List<GoogleSearchResponse> allResponses = futures.stream()
                 .map(CompletableFuture::join)
                 .filter(Objects::nonNull)
                 .peek(System.out::println)
-                .map(response -> new ObjectMapper().readValue(response, SerpSearchResponse.class))
+                .map(response -> new ObjectMapper().readValue(response, GoogleSearchResponse.class))
                 .toList();
 
         return clientSearchResponseMapper.map(allResponses);
