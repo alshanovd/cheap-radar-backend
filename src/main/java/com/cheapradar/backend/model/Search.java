@@ -1,5 +1,6 @@
 package com.cheapradar.backend.model;
 
+import com.cheapradar.backend.dto.search.SearchStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class Search {
     @Id
     private String id;
     private String username;
+    private SearchStatus status;
 
     private String airportFrom;
     private String airportTo;
@@ -42,6 +44,7 @@ public class Search {
                   Integer checkIntervalHours, List<String> providers) {
 
         this.id = UUID.randomUUID().toString();
+        this.status = SearchStatus.PROCESSING;
         this.airportFrom = airportFrom;
         this.airportTo = airportTo;
         this.dateFrom = dateFrom;
@@ -68,6 +71,7 @@ public class Search {
 
     public void setTickets(List<Ticket> tickets) {
         this.tickets = tickets;
+        this.status = SearchStatus.COMPLETED;
         this.lastCheckedAt = nextCheckAt;
         setNextCheckAt();
     }

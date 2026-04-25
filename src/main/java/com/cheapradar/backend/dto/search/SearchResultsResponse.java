@@ -10,6 +10,7 @@ import java.util.List;
 @Data
 @Builder
 public class SearchResultsResponse {
+    private SearchStatus status;
     private String airportFrom;
     private String airportTo;
     private LocalDate dateFrom;
