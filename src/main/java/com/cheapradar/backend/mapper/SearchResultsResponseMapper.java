@@ -27,7 +27,9 @@ public class SearchResultsResponseMapper {
                                 .date(ticket.getDate())
                                 .provider(ticket.getProvider())
                                 .link(ticket.getLink())
-                                .build()).toList())
+                                .build())
+                                .sorted()
+                                .toList())
                 .build();
     }
 }
