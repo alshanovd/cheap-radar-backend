@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 public class SearchResultsResponseMapper {
     public SearchResultsResponse map(Search search) {
         return SearchResultsResponse.builder()
+                .status(search.getStatus())
                 .airportFrom(search.getAirportFrom())
                 .airportTo(search.getAirportTo())
                 .dateFrom(search.getDateFrom())

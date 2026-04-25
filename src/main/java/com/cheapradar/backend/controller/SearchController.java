@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.concurrent.CompletableFuture;
+
 
 @RestController
 @RequestMapping("/api/search")
@@ -20,7 +22,7 @@ public class SearchController {
     @PostMapping
     public ResponseEntity<CreateSearchResponse> createSearch(@RequestBody CreateSearchRequest request) {
         Search search = service.createSearch(request);
-        service.updateSearchResults(search);
+        CompletableFuture.runAsync(() -> service.updateSearchResults(search));
         CreateSearchResponse response = new CreateSearchResponse(search.getId());
         return ResponseEntity.ok(response);
     }
