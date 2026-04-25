@@ -65,4 +65,13 @@ public class SearchService {
         search.setTickets(allTickets);
         repository.save(search);
     }
+
+    public GetAllSearchesResponse getAllSearches(Long userId) {
+        List<Search> searches = repository.findAllByUserId(userId);
+        return GetAllSearchesResponse.builder()
+                        .searches(searches.stream()
+                                .map(searchResultsResponseMapper::map)
+                                .toList())
+                .build();
+    }
 }
