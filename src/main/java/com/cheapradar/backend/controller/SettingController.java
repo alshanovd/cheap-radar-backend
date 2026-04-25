@@ -18,7 +18,9 @@ public class SettingController {
     private final SettingService settingService;
 
     @GetMapping
-    public ResponseEntity<SettingsResponse> getSettings(@RequestParam("user_id") BigInteger userId) {
+    public ResponseEntity<SettingsResponse> getSettings(
+            @RequestParam(value = "user_id", defaultValue = "1") BigInteger userId
+    ) {
         log.info("Received request to get settings for user: {}", userId);
         SettingsResponse response = settingService.getSettings(userId);
         log.info("Returning settings: {}", response);
