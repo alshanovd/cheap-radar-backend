@@ -19,7 +19,7 @@ import java.util.UUID;
 public class Search {
     @Id
     private String id;
-    private String username;
+    private Long userId;
     private SearchStatus status;
 
     private String airportFrom;
@@ -44,6 +44,7 @@ public class Search {
                   Integer checkIntervalHours, List<String> providers) {
 
         this.id = UUID.randomUUID().toString();
+        this.userId = 1L;
         this.status = SearchStatus.PROCESSING;
         this.airportFrom = airportFrom;
         this.airportTo = airportTo;

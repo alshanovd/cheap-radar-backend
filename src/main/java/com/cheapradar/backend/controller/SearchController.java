@@ -1,5 +1,6 @@
 package com.cheapradar.backend.controller;
 
+import com.cheapradar.backend.dto.search.GetAllSearchesResponse;
 import com.cheapradar.backend.dto.search.CreateSearchRequest;
 import com.cheapradar.backend.dto.search.CreateSearchResponse;
 import com.cheapradar.backend.dto.search.SearchResultsResponse;
@@ -30,6 +31,12 @@ public class SearchController {
     @GetMapping("/{searchId}")
     public ResponseEntity<SearchResultsResponse> getSearchResults(@PathVariable String searchId) {
         SearchResultsResponse response = service.getSearchResults(searchId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<GetAllSearchesResponse> getAllSearches() {
+        GetAllSearchesResponse response = service.getAllSearches(1L);
         return ResponseEntity.ok(response);
     }
 }
