@@ -1,8 +1,8 @@
 package com.cheapradar.backend.config;
 
-import com.cheapradar.backend.client.serp.SerpClientProperties;
-import com.cheapradar.backend.client.serp.SerpSearchClient;
-import com.cheapradar.backend.client.serp.mapping.ClientSearchResponseMapper;
+import com.cheapradar.backend.client.google.GoogleClientProperties;
+import com.cheapradar.backend.client.google.GoogleSearchClient;
+import com.cheapradar.backend.client.google.mapping.ClientSearchResponseMapper;
 import com.cheapradar.backend.client.test.TestSearchClient;
 import com.cheapradar.backend.client.SearchClient;
 import org.springframework.context.annotation.Bean;
@@ -14,9 +14,9 @@ import java.util.Map;
 public class AppConfig {
 
     @Bean
-    public Map<String, SearchClient> searchClients(SerpClientProperties serpClientProperties,
+    public Map<String, SearchClient> searchClients(GoogleClientProperties googleClientProperties,
                                                    ClientSearchResponseMapper clientSearchResponseMapper) {
         return Map.of("TEST", new TestSearchClient(),
-                serpClientProperties.getProvider(), new SerpSearchClient(serpClientProperties, clientSearchResponseMapper));
+                googleClientProperties.getProvider(), new GoogleSearchClient(googleClientProperties, clientSearchResponseMapper));
     }
 }
