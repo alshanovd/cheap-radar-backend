@@ -1,40 +1,74 @@
 package com.cheapradar.backend.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
+@Data
 @Entity
 @Table(name = "searches")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Search {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
+    private String username;
 
-    private String origin;
-    private String destination;
-    private LocalDateTime date;
+    private String airportFrom;
+    private String airportTo;
+    private LocalDate dateFrom;
+    private LocalDate dateTo;
 
-    private String status; // e.g. "ONGOING", "ARCHIVED"
+    private LocalDateTime lastCheckedAt;
+    private LocalDateTime nextCheckAt;
+    private LocalDateTime checkFinishAt;
+    private Integer checkIntervalHours;
 
-    public Search() {}
+    @Convert(converter = StringListConverter.class)
+    private List<String> providers;
 
-    public Search(String origin, String destination, LocalDateTime date, String status) {
-        this.origin = origin;
-        this.destination = destination;
-        this.date = date;
-        this.status = status;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "search_id")
+    private List<Ticket> tickets;
+
+    public Search(String airportFrom, String airportTo,
+                  LocalDate dateFrom, LocalDate dateTo, LocalDateTime checkFinishAt,
+                  Integer checkIntervalHours, List<String> providers) {
+
+        this.id = UUID.randomUUID().toString();
+        this.airportFrom = airportFrom;
+        this.airportTo = airportTo;
+        this.dateFrom = dateFrom;
+        this.dateTo = dateTo;
+        this.checkFinishAt = checkFinishAt;
+        this.checkIntervalHours = checkIntervalHours;
+        this.providers = providers;
+        this.lastCheckedAt = LocalDateTime.now();
+
+        var nextCheckAt = lastCheckedAt.plusHours(checkIntervalHours);
+        if (nextCheckAt.isBefore(checkFinishAt)) {
+            this.nextCheckAt = LocalDateTime.now();
+        }
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getOrigin() { return origin; }
-    public void setOrigin(String origin) { this.origin = origin; }
-    public String getDestination() { return destination; }
-    public void setDestination(String destination) { this.destination = destination; }
-    public LocalDateTime getDate() { return date; }
-    public void setDate(LocalDateTime date) { this.date = date; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    private void setNextCheckAt() {
+        var nextCheckAt = lastCheckedAt.plusHours(checkIntervalHours);
+        if (nextCheckAt.isBefore(checkFinishAt)) {
+            this.nextCheckAt = nextCheckAt;
+        } else {
+            this.nextCheckAt = null;
+        }
+    }
+
+    public void setTickets(List<Ticket> tickets) {
+        this.tickets = tickets;
+        this.lastCheckedAt = nextCheckAt;
+        setNextCheckAt();
+    }
 }

@@ -1,4 +1,4 @@
-package com.cheapradar.backend.dto;
+package com.cheapradar.backend.dto.settings;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

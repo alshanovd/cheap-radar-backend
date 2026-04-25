@@ -1,14 +1,12 @@
 package com.cheapradar.backend.controller;
 
-import com.cheapradar.backend.dto.SettingsRequest;
-import com.cheapradar.backend.dto.SettingsResponse;
+import com.cheapradar.backend.dto.settings.SettingsRequest;
+import com.cheapradar.backend.dto.settings.SettingsResponse;
 import com.cheapradar.backend.service.SettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @Slf4j
 @RestController

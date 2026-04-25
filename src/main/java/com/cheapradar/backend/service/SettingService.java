@@ -1,7 +1,7 @@
 package com.cheapradar.backend.service;
 
-import com.cheapradar.backend.dto.SettingsRequest;
-import com.cheapradar.backend.dto.SettingsResponse;
+import com.cheapradar.backend.dto.settings.SettingsRequest;
+import com.cheapradar.backend.dto.settings.SettingsResponse;
 import com.cheapradar.backend.model.Setting;
 import com.cheapradar.backend.repository.SettingRepository;
 import lombok.RequiredArgsConstructor;
