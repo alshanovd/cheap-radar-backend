@@ -5,7 +5,9 @@ import com.cheapradar.backend.dto.settings.SettingsResponse;
 import com.cheapradar.backend.model.Setting;
 import com.cheapradar.backend.repository.SettingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigInteger;
 import java.util.Optional;
@@ -15,8 +17,8 @@ import java.util.Optional;
 public class SettingService {
     private final SettingRepository repository;
 
-    public SettingsResponse getSettings() {
-        Optional<Setting> optional = repository.getByUserId(BigInteger.ONE);
+    public SettingsResponse getSettings(BigInteger userId) {
+        Optional<Setting> optional = repository.getByUserId(userId);
         if (optional.isEmpty()) {
             return new SettingsResponse("USD", true, "dark");
         }
@@ -25,11 +27,16 @@ public class SettingService {
     }
 
     public SettingsResponse saveSettings(SettingsRequest request) {
-        Optional<Setting> optional = repository.getByUserId(BigInteger.ONE);
+        BigInteger userId = request.getUserId();
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "user_id is required");
+        }
+
+        Optional<Setting> optional = repository.getByUserId(userId);
         Setting setting;
         if (optional.isEmpty()) {
             setting = new Setting();
-            setting.setUserId(BigInteger.ONE);
+            setting.setUserId(userId);
         } else {
             setting = optional.get();
         }
@@ -44,7 +51,7 @@ public class SettingService {
             setting.setTheme(request.getTheme());
         }
 
-        repository.save(setting);
-        return new SettingsResponse(setting.getCurrency(), setting.isNotifications(), setting.getTheme());
+        Setting savedSetting = repository.save(setting);
+        return new SettingsResponse(savedSetting.getCurrency(), savedSetting.isNotifications(), savedSetting.getTheme());
     }
 }

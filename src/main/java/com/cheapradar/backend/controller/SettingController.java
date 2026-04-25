@@ -7,19 +7,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.math.BigInteger;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/setting")
+@RequestMapping("/api/settings")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class SettingController {
     private final SettingService settingService;
 
     @GetMapping
-    public ResponseEntity<SettingsResponse> getSettings() {
-        log.info("Received request to get settings");
-        SettingsResponse response = settingService.getSettings();
+    public ResponseEntity<SettingsResponse> getSettings(@RequestParam("user_id") BigInteger userId) {
+        log.info("Received request to get settings for user: {}", userId);
+        SettingsResponse response = settingService.getSettings(userId);
         log.info("Returning settings: {}", response);
         return ResponseEntity.ok(response);
     }
