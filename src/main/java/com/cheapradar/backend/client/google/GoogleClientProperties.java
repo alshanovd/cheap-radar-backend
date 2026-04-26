@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "application.client.google")
 public class GoogleClientProperties {
+    private Integer maximumRequests;
     private Integer maximumTickets;
     private String provider;
     private String endpoint;
