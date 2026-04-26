@@ -7,13 +7,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class TicketMapper {
     public Ticket map(TicketResponse ticketResponse) {
-        Ticket ticket = new Ticket();
-        ticket.setProvider(ticketResponse.getProvider());
-        ticket.setPrice(ticketResponse.getPrice());
-        ticket.setAirportFrom(ticketResponse.getAirportFrom());
-        ticket.setAirportTo(ticketResponse.getAirportTo());
-        ticket.setDate(ticketResponse.getDate());
-        ticket.setLink(ticketResponse.getLink());
-        return ticket;
+        return Ticket.builder()
+                .provider(ticketResponse.getProvider())
+                .price(ticketResponse.getPrice())
+                .airportFrom(ticketResponse.getAirportFrom())
+                .airportTo(ticketResponse.getAirportTo())
+                .date(ticketResponse.getDate())
+                .link(ticketResponse.getLink())
+                .airline(ticketResponse.getAirline())
+                .airlineLogo(ticketResponse.getAirlineLogo())
+                .build();
     }
 }

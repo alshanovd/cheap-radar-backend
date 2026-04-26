@@ -23,7 +23,30 @@ public class TestSearchClient implements SearchClient {
                                 .date(request.getDateFrom().atStartOfDay())
                                 .link("https://www.example.com/ticket")
                                 .price(BigDecimal.valueOf(100))
-                                .build()))
+                                .airline("Jetstar")
+                                .airlineLogo("https://www.gstatic.com/flights/airline_logos/70px/JQ.png")
+                                .build(),
+                        TicketResponse.builder()
+                                .provider(PROVIDER)
+                                .airportFrom(request.getAirportFrom())
+                                .airportTo(request.getAirportTo())
+                                .date(request.getDateFrom().atTime(14, 25))
+                                .link("https://www.example.com/ticket")
+                                .price(BigDecimal.valueOf(124))
+                                .airline("Virgin Australia")
+                                .airlineLogo("https://www.gstatic.com/flights/airline_logos/70px/VA.png")
+                                .build(),
+                        TicketResponse.builder()
+                                .provider(PROVIDER)
+                                .airportFrom(request.getAirportFrom())
+                                .airportTo(request.getAirportTo())
+                                .date(request.getDateFrom().atTime(20, 34))
+                                .link("https://www.example.com/ticket")
+                                .price(BigDecimal.valueOf(132))
+                                .airline("Qantas")
+                                .airlineLogo("https://www.gstatic.com/flights/airline_logos/70px/QF.png")
+                                .build())
+                )
                 .build();
     }
 }

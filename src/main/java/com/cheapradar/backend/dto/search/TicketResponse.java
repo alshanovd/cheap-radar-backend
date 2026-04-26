@@ -12,9 +12,12 @@ public class TicketResponse implements Comparable<TicketResponse>{
     private String airportFrom;
     private String airportTo;
     private LocalDateTime date;
-    private String provider;
     private BigDecimal price;
+    private String provider;
     private String link;
+
+    private String airline;
+    private String airlineLogo;
 
     @Override
     public int compareTo(TicketResponse o) {

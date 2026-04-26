@@ -33,6 +33,11 @@ public class GoogleSearchResponse {
             @JsonProperty("arrival_airport")
             private Airport arrivalAirport;
 
+            private String airline;
+
+            @JsonProperty("airline_logo")
+            private String airlineLogo;
+
             @Data
             public static class Airport {
                 private String id;

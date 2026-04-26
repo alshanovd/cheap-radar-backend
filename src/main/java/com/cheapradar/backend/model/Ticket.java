@@ -29,4 +29,7 @@ public class Ticket {
     private BigDecimal price;
     private String link;
 
+    private String airline;
+    private String airlineLogo;
+
 }
