@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 @Data
 @Entity
+@ToString
 @Table(name = "searches")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -73,7 +75,7 @@ public class Search {
     public void setTickets(List<Ticket> tickets) {
         this.tickets = tickets;
         this.status = SearchStatus.COMPLETED;
-        this.lastCheckedAt = nextCheckAt;
+        this.lastCheckedAt = LocalDateTime.now();
         setNextCheckAt();
     }
 }

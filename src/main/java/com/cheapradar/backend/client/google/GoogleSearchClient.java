@@ -8,7 +8,6 @@ import com.cheapradar.backend.client.google.model.GoogleSearchResponse;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -40,14 +39,15 @@ public class GoogleSearchClient implements SearchClient {
         List<LocalDate> dates = new ArrayList<>();
         LocalDate start = request.getDateFrom();
         LocalDate end = request.getDateTo();
-        int limit = 2;
+
+        int limit = properties.getMaximumRequests();
         while (!start.isAfter(end) && limit > 0) {
             dates.add(start);
             start = start.plusDays(1);
             limit --;
         }
 
-        List<CompletableFuture<String>> futures = dates.stream()
+        List<CompletableFuture<GoogleSearchResponse>> futures = dates.stream()
                 .map(date -> {
                     MultiValueMap<String, String> paramsWithDate = new LinkedMultiValueMap<>(queryParams);
                     paramsWithDate.set("outbound_date", date.format(dateFormatter));
@@ -57,18 +57,15 @@ public class GoogleSearchClient implements SearchClient {
                                     .queryParams(paramsWithDate)
                                     .build())
                             .retrieve()
-                            .body(String.class)
+                            .body(GoogleSearchResponse.class)
                     );
                 })
                 .toList();
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
         List<GoogleSearchResponse> allResponses = futures.stream()
                 .map(CompletableFuture::join)
                 .filter(Objects::nonNull)
-                .peek(System.out::println)
-                .map(response -> new ObjectMapper().readValue(response, GoogleSearchResponse.class))
                 .toList();
 
         return clientSearchResponseMapper.map(allResponses);
