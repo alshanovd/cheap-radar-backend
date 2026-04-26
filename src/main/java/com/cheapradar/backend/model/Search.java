@@ -29,6 +29,7 @@ public class Search {
     private LocalDate dateFrom;
     private LocalDate dateTo;
 
+    private LocalDateTime createdAt;
     private LocalDateTime lastCheckedAt;
     private LocalDateTime nextCheckAt;
     private LocalDateTime checkFinishAt;
@@ -55,7 +56,10 @@ public class Search {
         this.checkFinishAt = checkFinishAt;
         this.checkIntervalHours = checkIntervalHours;
         this.providers = providers;
-        this.lastCheckedAt = LocalDateTime.now();
+
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.lastCheckedAt = now;
 
         var nextCheckAt = lastCheckedAt.plusHours(checkIntervalHours);
         if (nextCheckAt.isBefore(checkFinishAt)) {

@@ -16,6 +16,7 @@ public class SearchResultsResponse {
     private LocalDate dateFrom;
     private LocalDate dateTo;
 
+    private LocalDateTime createdAt;
     private LocalDateTime lastCheckedAt;
     private LocalDateTime nextCheckAt;
     private LocalDateTime checkFinishAt;
