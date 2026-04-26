@@ -36,6 +36,8 @@ public class ClientSearchResponseMapper {
                                     .airportTo(airportTo.getId())
                                     .date(LocalDateTime.parse(airportFrom.getTime(), formatter))
                                     .provider(properties.getProvider())
+                                    .airline(flight.getAirline())
+                                    .airlineLogo(flight.getAirlineLogo())
                                     .build();
                             });
                     })
