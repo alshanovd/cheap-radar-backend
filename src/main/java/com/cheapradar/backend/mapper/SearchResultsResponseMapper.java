@@ -16,6 +16,7 @@ public class SearchResultsResponseMapper {
                 .dateTo(search.getDateTo())
                 .checkFinishAt(search.getCheckFinishAt())
                 .checkIntervalHours(search.getCheckIntervalHours())
+                .createdAt(search.getCreatedAt())
                 .lastCheckedAt(search.getLastCheckedAt())
                 .nextCheckAt(search.getNextCheckAt())
                 .providers(search.getProviders())
