@@ -76,9 +76,9 @@ public class Search {
         }
     }
 
-    public void setTickets(List<Ticket> tickets) {
+    public void setTickets(List<Ticket> tickets, SearchStatus status) {
         this.tickets = tickets;
-        this.status = SearchStatus.COMPLETED;
+        this.status = status;
         this.lastCheckedAt = LocalDateTime.now();
         setNextCheckAt();
     }

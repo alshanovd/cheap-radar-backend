@@ -1,10 +1,10 @@
-package com.cheapradar.backend.client.google;
+package com.cheapradar.backend.provider.google;
 
-import com.cheapradar.backend.client.SearchClient;
-import com.cheapradar.backend.client.dto.ClientSearchRequest;
-import com.cheapradar.backend.client.dto.ClientSearchResponse;
-import com.cheapradar.backend.client.google.mapping.ClientSearchResponseMapper;
-import com.cheapradar.backend.client.google.model.GoogleSearchResponse;
+import com.cheapradar.backend.provider.FlightProvider;
+import com.cheapradar.backend.provider.dto.ProviderSearchRequest;
+import com.cheapradar.backend.provider.dto.ProviderSearchResponse;
+import com.cheapradar.backend.provider.google.model.GoogleSearchResponse;
+import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
@@ -13,18 +13,20 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-public class GoogleSearchClient implements SearchClient {
+@Component
+public class GoogleFlightProvider implements FlightProvider {
     private static final String DATE_FORMAT = "yyyy-MM-dd";
 
     private final RestClient restClient;
     private final GoogleClientProperties properties;
-    private final ClientSearchResponseMapper clientSearchResponseMapper;
+    private final GoogleSearchResponseMapper googleSearchResponseMapper;
 
-    public GoogleSearchClient(GoogleClientProperties properties, ClientSearchResponseMapper clientSearchResponseMapper) {
-        this.clientSearchResponseMapper = clientSearchResponseMapper;
+    public GoogleFlightProvider(GoogleClientProperties properties, GoogleSearchResponseMapper googleSearchResponseMapper) {
+        this.googleSearchResponseMapper = googleSearchResponseMapper;
         this.properties = properties;
         this.restClient = RestClient.builder()
                 .baseUrl(properties.getEndpoint())
@@ -32,7 +34,12 @@ public class GoogleSearchClient implements SearchClient {
     }
 
     @Override
-    public ClientSearchResponse search(ClientSearchRequest request) {
+    public String slug() {
+        return properties.getProvider().toLowerCase(Locale.ROOT);
+    }
+
+    @Override
+    public ProviderSearchResponse search(ProviderSearchRequest request) {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         MultiValueMap<String, String> queryParams = getQueryParams(request);
 
@@ -44,7 +51,7 @@ public class GoogleSearchClient implements SearchClient {
         while (!start.isAfter(end) && limit > 0) {
             dates.add(start);
             start = start.plusDays(1);
-            limit --;
+            limit--;
         }
 
         List<CompletableFuture<GoogleSearchResponse>> futures = dates.stream()
@@ -52,12 +59,12 @@ public class GoogleSearchClient implements SearchClient {
                     MultiValueMap<String, String> paramsWithDate = new LinkedMultiValueMap<>(queryParams);
                     paramsWithDate.set("outbound_date", date.format(dateFormatter));
                     return CompletableFuture.supplyAsync(() ->
-                        restClient.get()
-                            .uri(uriBuilder -> uriBuilder
-                                    .queryParams(paramsWithDate)
-                                    .build())
-                            .retrieve()
-                            .body(GoogleSearchResponse.class)
+                            restClient.get()
+                                    .uri(uriBuilder -> uriBuilder
+                                            .queryParams(paramsWithDate)
+                                            .build())
+                                    .retrieve()
+                                    .body(GoogleSearchResponse.class)
                     );
                 })
                 .toList();
@@ -68,10 +75,10 @@ public class GoogleSearchClient implements SearchClient {
                 .filter(Objects::nonNull)
                 .toList();
 
-        return clientSearchResponseMapper.map(allResponses);
+        return googleSearchResponseMapper.map(allResponses);
     }
 
-    private MultiValueMap<String, String> getQueryParams(ClientSearchRequest request) {
+    private MultiValueMap<String, String> getQueryParams(ProviderSearchRequest request) {
         LinkedMultiValueMap<String, String> multiMap = new LinkedMultiValueMap<>();
         multiMap.add("departure_id", request.getAirportFrom());
         multiMap.add("arrival_id", request.getAirportTo());

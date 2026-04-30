@@ -1,4 +1,4 @@
-package com.cheapradar.backend.client.google;
+package com.cheapradar.backend.provider.google;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

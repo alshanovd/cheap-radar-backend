@@ -1,13 +1,13 @@
 package com.cheapradar.backend.mapper;
 
-import com.cheapradar.backend.client.dto.ClientSearchRequest;
 import com.cheapradar.backend.model.Search;
+import com.cheapradar.backend.provider.dto.ProviderSearchRequest;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ClientSearchRequestMapper {
-    public ClientSearchRequest map(Search search) {
-        return ClientSearchRequest.builder()
+public class ProviderSearchRequestMapper {
+    public ProviderSearchRequest map(Search search) {
+        return ProviderSearchRequest.builder()
                 .airportFrom(search.getAirportFrom())
                 .airportTo(search.getAirportTo())
                 .dateFrom(search.getDateFrom())

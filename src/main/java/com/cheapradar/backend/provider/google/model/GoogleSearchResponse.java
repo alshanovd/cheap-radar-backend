@@ -1,4 +1,4 @@
-package com.cheapradar.backend.client.google.model;
+package com.cheapradar.backend.provider.google.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
