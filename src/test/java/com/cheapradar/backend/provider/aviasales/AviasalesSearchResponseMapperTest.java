@@ -21,7 +21,7 @@ class AviasalesSearchResponseMapperTest {
         AviasalesSearchResponseMapper mapper = new AviasalesSearchResponseMapper(properties());
 
         ProviderSearchResponse response = mapper.map(List.of(new AviasalesHtmlResponse(
-                ticketHtml("data-test-id=\"ticket-preview\"", "data-test-id=\"price\""),
+                ticketHtml("class=\"ticket\"", "data-test-id=\"price\""),
                 SEARCH_URL,
                 LocalDate.of(2026, 5, 3)
         )), request());
@@ -52,12 +52,60 @@ class AviasalesSearchResponseMapperTest {
         assertEquals(new BigDecimal("336"), response.getTickets().get(0).getPrice());
     }
 
+    @Test
+    void keepsAirlineLogoScopedToEachPriceAnchor() {
+        AviasalesSearchResponseMapper mapper = new AviasalesSearchResponseMapper(properties());
+
+        ProviderSearchResponse response = mapper.map(List.of(new AviasalesHtmlResponse(
+                """
+                        <div>
+                            %s
+                            %s
+                        </div>
+                        """.formatted(
+                        ticketHtml("class=\"ticket\"", "data-test-id=\"price\"", "120\u202F$", "Jetstar", "JQ", "16:05"),
+                        ticketHtml("class=\"ticket\"", "data-test-id=\"price\"", "128\u202F$", "Qantas", "QF", "10:35")
+                ),
+                SEARCH_URL,
+                LocalDate.of(2026, 5, 3)
+        )), request());
+
+        assertEquals(2, response.getTickets().size());
+        assertEquals(new BigDecimal("120"), response.getTickets().get(0).getPrice());
+        assertEquals("Jetstar", response.getTickets().get(0).getAirline());
+        assertEquals("https://img.avs.io/pics/al_square/JQ@avif?rs=fit:120:120",
+                response.getTickets().get(0).getAirlineLogo());
+        assertEquals(new BigDecimal("128"), response.getTickets().get(1).getPrice());
+        assertEquals("Qantas", response.getTickets().get(1).getAirline());
+        assertEquals("https://img.avs.io/pics/al_square/QF@avif?rs=fit:120:120",
+                response.getTickets().get(1).getAirlineLogo());
+    }
+
     private String ticketHtml(String ticketAttribute, String priceAttribute) {
+        return ticketHtml(ticketAttribute, priceAttribute, "336\u202F$", "Scoot", "TR", "13:00");
+    }
+
+    private String ticketHtml(
+            String ticketAttribute,
+            String priceAttribute,
+            String price,
+            String airline,
+            String airlineCode,
+            String departureTime
+    ) {
         return """
                 <div %s>
-                    <div %s>336\u202F$</div>
-                    <img alt="Scoot" src="//img.avs.io/pics/al_square/TR@avif?rs=fit:120:120">
-                    <div data-test-id="text">13:00</div>
+                    <div>
+                        <div>
+                            <div %s>%s</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div>
+                            <img alt="%s" src="//img.avs.io/pics/al_square/%s@avif?rs=fit:120:120">
+                        </div>
+                        <div data-test-id="text">%s</div>
+                    </div>
                     <div data-test-id="text">Сидней</div>
                     <div data-test-id="text">3&nbsp;мая,&nbsp;вс</div>
                     <span data-test-id="text">SYD</span>
@@ -68,7 +116,7 @@ class AviasalesSearchResponseMapperTest {
                     <div data-test-id="text">Бангкок</div>
                     <div data-test-id="text">4&nbsp;мая,&nbsp;пн</div>
                 </div>
-                """.formatted(ticketAttribute, priceAttribute);
+                """.formatted(ticketAttribute, priceAttribute, price, airline, airlineCode, departureTime);
     }
 
     private AviasalesClientProperties properties() {

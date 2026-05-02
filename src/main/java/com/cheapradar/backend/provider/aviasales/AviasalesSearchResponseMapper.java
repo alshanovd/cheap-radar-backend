@@ -84,7 +84,7 @@ public class AviasalesSearchResponseMapper {
             ProviderSearchRequest request,
             String provider
     ) {
-        Element ticket = findTicket(priceElement).orElse(priceElement);
+        Element ticket = findTicket(priceElement, response.searchDate()).orElse(priceElement);
         Optional<BigDecimal> price = parsePrice(priceElement.text());
         Optional<LocalDateTime> departureDateTime = parseDepartureDateTime(ticket, response.searchDate());
 
@@ -107,15 +107,27 @@ public class AviasalesSearchResponseMapper {
                 .build());
     }
 
-    private Optional<Element> findTicket(Element priceElement) {
+    private Optional<Element> findTicket(Element priceElement, LocalDate searchDate) {
         Element current = priceElement;
         while (current != null) {
-            if ("ticket-preview".equals(current.attr("data-test-id"))) {
+            if (isTicketScope(current, searchDate)) {
                 return Optional.of(current);
             }
             current = current.parent();
         }
         return Optional.empty();
+    }
+
+    private boolean isTicketScope(Element element, LocalDate searchDate) {
+        return countPrices(element) == 1
+                && element.select("img[alt][src]").size() > 0
+                && parseDepartureDateTime(element, searchDate).isPresent();
+    }
+
+    private long countPrices(Element element) {
+        return element.getAllElements().stream()
+                .filter(candidate -> "price".equals(candidate.attr("data-test-id")))
+                .count();
     }
 
     private Optional<BigDecimal> parsePrice(String text) {
@@ -198,14 +210,14 @@ public class AviasalesSearchResponseMapper {
     }
 
     private Optional<String> findAirline(Element ticket) {
-        return ticket.select("img[alt]").stream()
+        return ticket.select("img[alt][src]").stream()
                 .map(element -> element.attr("alt"))
                 .filter(text -> !text.isBlank())
                 .findFirst();
     }
 
     private Optional<String> findAirlineLogo(Element ticket) {
-        return ticket.select("img[src]").stream()
+        return ticket.select("img[alt][src]").stream()
                 .map(element -> normalizeUrl(element.attr("src")))
                 .filter(text -> !text.isBlank())
                 .findFirst();
