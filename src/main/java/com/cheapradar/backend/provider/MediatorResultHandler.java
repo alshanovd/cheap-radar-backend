@@ -5,6 +5,6 @@ import com.cheapradar.backend.provider.dto.ProviderTicket;
 import java.util.List;
 
 @FunctionalInterface
-public interface ProviderResultHandler {
+public interface MediatorResultHandler {
     void onSuccess(String providerSlug, List<ProviderTicket> tickets);
 }

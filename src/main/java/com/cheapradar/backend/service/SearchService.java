@@ -10,8 +10,8 @@ import com.cheapradar.backend.mapper.TicketMapper;
 import com.cheapradar.backend.model.Search;
 import com.cheapradar.backend.model.Ticket;
 import com.cheapradar.backend.model.User;
-import com.cheapradar.backend.provider.ProviderProxy;
-import com.cheapradar.backend.provider.dto.ProviderAggregateResult;
+import com.cheapradar.backend.provider.FlightSearchMediator;
+import com.cheapradar.backend.provider.dto.MediatorSearchResult;
 import com.cheapradar.backend.provider.dto.ProviderSearchRequest;
 import com.cheapradar.backend.provider.dto.ProviderTicket;
 import com.cheapradar.backend.repository.SearchRepository;
@@ -38,7 +38,7 @@ public class SearchService {
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final SearchRepository searchRepository;
-    private final ProviderProxy providerProxy;
+    private final FlightSearchMediator flightSearchMediator;
     private final ProviderSearchRequestMapper providerSearchRequestMapper;
     private final SearchResultsResponseMapper searchResultsResponseMapper;
     private final Map<String, Object> searchLocks = new ConcurrentHashMap<>();
@@ -66,11 +66,11 @@ public class SearchService {
         });
 
         ProviderSearchRequest providerSearchRequest = providerSearchRequestMapper.map(search);
-        ProviderAggregateResult providerResult = providerProxy.search(search.getProviders(), providerSearchRequest,
+        MediatorSearchResult mediatorResult = flightSearchMediator.search(search.getProviders(), providerSearchRequest,
                 (providerSlug, tickets) -> saveProviderTickets(searchId, providerSlug, tickets));
 
-        if (!providerResult.getFailedProviders().isEmpty()) {
-            log.warn("Search {} completed with failed providers {}", searchId, providerResult.getFailedProviders());
+        if (!mediatorResult.getFailedProviders().isEmpty()) {
+            log.warn("Search {} completed with failed providers {}", searchId, mediatorResult.getFailedProviders());
         }
 
         Search completedSearch = withSearchLock(searchId, () -> {
@@ -79,7 +79,7 @@ public class SearchService {
             return searchRepository.save(currentSearch);
         });
 
-        if (!providerResult.getTickets().isEmpty()) {
+        if (!mediatorResult.getTickets().isEmpty()) {
             sendSearchResultEmail(completedSearch);
         }
     }

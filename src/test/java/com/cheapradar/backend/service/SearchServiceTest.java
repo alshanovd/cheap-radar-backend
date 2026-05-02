@@ -8,9 +8,9 @@ import com.cheapradar.backend.mapper.TicketMapper;
 import com.cheapradar.backend.model.Search;
 import com.cheapradar.backend.model.Ticket;
 import com.cheapradar.backend.model.User;
-import com.cheapradar.backend.provider.ProviderProxy;
-import com.cheapradar.backend.provider.ProviderResultHandler;
-import com.cheapradar.backend.provider.dto.ProviderAggregateResult;
+import com.cheapradar.backend.provider.FlightSearchMediator;
+import com.cheapradar.backend.provider.MediatorResultHandler;
+import com.cheapradar.backend.provider.dto.MediatorSearchResult;
 import com.cheapradar.backend.provider.dto.ProviderSearchRequest;
 import com.cheapradar.backend.provider.dto.ProviderTicket;
 import com.cheapradar.backend.repository.SearchRepository;
@@ -37,7 +37,7 @@ class SearchServiceTest {
     private final EmailService emailService = mock(EmailService.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final SearchRepository searchRepository = mock(SearchRepository.class);
-    private final ProviderProxy providerProxy = mock(ProviderProxy.class);
+    private final FlightSearchMediator flightSearchMediator = mock(FlightSearchMediator.class);
     private final ProviderSearchRequestMapper providerSearchRequestMapper = mock(ProviderSearchRequestMapper.class);
     private final SearchResultsResponseMapper searchResultsResponseMapper = mock(SearchResultsResponseMapper.class);
 
@@ -47,7 +47,7 @@ class SearchServiceTest {
             emailService,
             userRepository,
             searchRepository,
-            providerProxy,
+            flightSearchMediator,
             providerSearchRequestMapper,
             searchResultsResponseMapper
     );
@@ -62,11 +62,11 @@ class SearchServiceTest {
         when(searchRepository.save(any(Search.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(providerSearchRequestMapper.map(search)).thenReturn(request);
         when(userRepository.findById(1L)).thenReturn(Optional.of(new User(1L, "Danil", "danil@example.com")));
-        when(providerProxy.search(eq(List.of("google", "test")), eq(request), any(ProviderResultHandler.class)))
+        when(flightSearchMediator.search(eq(List.of("google", "test")), eq(request), any(MediatorResultHandler.class)))
                 .thenAnswer(invocation -> {
-                    ProviderResultHandler handler = invocation.getArgument(2);
+                    MediatorResultHandler handler = invocation.getArgument(2);
                     handler.onSuccess("google", List.of(googleTicket));
-                    return ProviderAggregateResult.builder()
+                    return MediatorSearchResult.builder()
                             .tickets(List.of(googleTicket))
                             .successfulProviders(new LinkedHashSet<>(List.of("google")))
                             .failedProviders(new LinkedHashSet<>(List.of("test")))

@@ -1,6 +1,6 @@
 package com.cheapradar.backend.provider;
 
-import com.cheapradar.backend.provider.dto.ProviderAggregateResult;
+import com.cheapradar.backend.provider.dto.MediatorSearchResult;
 import com.cheapradar.backend.provider.dto.ProviderSearchRequest;
 import com.cheapradar.backend.provider.dto.ProviderSearchResponse;
 import com.cheapradar.backend.provider.dto.ProviderTicket;
@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ProviderProxyTest {
+class FlightSearchMediatorTest {
     private final ProviderSearchRequest request = ProviderSearchRequest.builder()
             .airportFrom("SYD")
             .airportTo("MEL")
@@ -29,9 +29,9 @@ class ProviderProxyTest {
 
     @Test
     void normalizesRequestedProviderSlugs() {
-        ProviderProxy proxy = new ProviderProxy(List.of(new StubProvider("google")));
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(new StubProvider("google")));
 
-        ProviderAggregateResult result = proxy.search(List.of("GOOGLE"), request);
+        MediatorSearchResult result = mediator.search(List.of("GOOGLE"), request);
 
         assertEquals(List.of("google"), result.getTickets().stream().map(ProviderTicket::getProvider).toList());
         assertEquals(List.of("google"), result.getSuccessfulProviders().stream().toList());
@@ -40,9 +40,9 @@ class ProviderProxyTest {
 
     @Test
     void fallsBackUnknownProviderToTestProvider() {
-        ProviderProxy proxy = new ProviderProxy(List.of(new StubProvider("test")));
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(new StubProvider("test")));
 
-        ProviderAggregateResult result = proxy.search(List.of("unknown"), request);
+        MediatorSearchResult result = mediator.search(List.of("unknown"), request);
 
         assertEquals(List.of("test"), result.getTickets().stream().map(ProviderTicket::getProvider).toList());
         assertEquals(List.of("unknown"), result.getSuccessfulProviders().stream().toList());
@@ -51,12 +51,12 @@ class ProviderProxyTest {
 
     @Test
     void keepsSuccessfulProviderResultsWhenAnotherProviderFails() {
-        ProviderProxy proxy = new ProviderProxy(List.of(
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(
                 new StubProvider("google"),
                 new FailingProvider("test")
         ));
 
-        ProviderAggregateResult result = proxy.search(List.of("google", "test"), request);
+        MediatorSearchResult result = mediator.search(List.of("google", "test"), request);
 
         assertEquals(List.of("google"), result.getTickets().stream().map(ProviderTicket::getProvider).toList());
         assertEquals(List.of("google"), result.getSuccessfulProviders().stream().toList());
@@ -67,13 +67,13 @@ class ProviderProxyTest {
     void notifiesSuccessfulProviderBeforeAllProvidersFinish() throws Exception {
         CountDownLatch slowProviderRelease = new CountDownLatch(1);
         CountDownLatch callbackReceived = new CountDownLatch(1);
-        ProviderProxy proxy = new ProviderProxy(List.of(
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(
                 new StubProvider("google"),
                 new BlockingProvider("test", slowProviderRelease)
         ));
 
-        CompletableFuture<ProviderAggregateResult> result = CompletableFuture.supplyAsync(() ->
-                proxy.search(List.of("google", "test"), request, (providerSlug, tickets) -> {
+        CompletableFuture<MediatorSearchResult> result = CompletableFuture.supplyAsync(() ->
+                mediator.search(List.of("google", "test"), request, (providerSlug, tickets) -> {
                     if ("google".equals(providerSlug)) {
                         callbackReceived.countDown();
                     }
@@ -90,12 +90,12 @@ class ProviderProxyTest {
     @Test
     void doesNotNotifyFailedProviders() {
         List<String> successfulCallbacks = new ArrayList<>();
-        ProviderProxy proxy = new ProviderProxy(List.of(
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(
                 new StubProvider("google"),
                 new FailingProvider("test")
         ));
 
-        ProviderAggregateResult result = proxy.search(List.of("google", "test"), request,
+        MediatorSearchResult result = mediator.search(List.of("google", "test"), request,
                 (providerSlug, tickets) -> successfulCallbacks.add(providerSlug));
 
         assertEquals(List.of("google"), successfulCallbacks);

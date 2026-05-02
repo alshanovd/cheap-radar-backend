@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Data
 @Builder
-public class ProviderAggregateResult {
+public class MediatorSearchResult {
     private List<ProviderTicket> tickets;
     private Set<String> successfulProviders;
     private Set<String> failedProviders;

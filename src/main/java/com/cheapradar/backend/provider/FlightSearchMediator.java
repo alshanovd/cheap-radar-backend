@@ -1,6 +1,6 @@
 package com.cheapradar.backend.provider;
 
-import com.cheapradar.backend.provider.dto.ProviderAggregateResult;
+import com.cheapradar.backend.provider.dto.MediatorSearchResult;
 import com.cheapradar.backend.provider.dto.ProviderSearchRequest;
 import com.cheapradar.backend.provider.dto.ProviderSearchResponse;
 import com.cheapradar.backend.provider.dto.ProviderTicket;
@@ -20,24 +20,24 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class ProviderProxy {
+public class FlightSearchMediator {
     private static final String FALLBACK_PROVIDER = "test";
 
     private final Map<String, FlightProvider> providers;
 
-    public ProviderProxy(List<FlightProvider> providers) {
+    public FlightSearchMediator(List<FlightProvider> providers) {
         this.providers = providers.stream()
                 .collect(Collectors.toUnmodifiableMap(provider -> normalize(provider.slug()), Function.identity()));
     }
 
-    public ProviderAggregateResult search(List<String> providerSlugs, ProviderSearchRequest request) {
+    public MediatorSearchResult search(List<String> providerSlugs, ProviderSearchRequest request) {
         return search(providerSlugs, request, (providerSlug, tickets) -> {
         });
     }
 
-    public ProviderAggregateResult search(List<String> providerSlugs,
-                                          ProviderSearchRequest request,
-                                          ProviderResultHandler resultHandler) {
+    public MediatorSearchResult search(List<String> providerSlugs,
+                                       ProviderSearchRequest request,
+                                       MediatorResultHandler resultHandler) {
         Set<String> requestedSlugs = providerSlugs == null
                 ? Set.of()
                 : providerSlugs.stream()
@@ -60,7 +60,7 @@ public class ProviderProxy {
                 .map(CompletableFuture::join)
                 .toList();
 
-        return ProviderAggregateResult.builder()
+        return MediatorSearchResult.builder()
                 .tickets(results.stream()
                         .flatMap(result -> result.tickets().stream())
                         .sorted()
@@ -76,7 +76,7 @@ public class ProviderProxy {
                 .build();
     }
 
-    private ProviderCallResult handleProviderResult(ProviderCallResult result, ProviderResultHandler resultHandler) {
+    private ProviderCallResult handleProviderResult(ProviderCallResult result, MediatorResultHandler resultHandler) {
         if (result.success()) {
             resultHandler.onSuccess(result.requestedSlug(), result.tickets());
         }
