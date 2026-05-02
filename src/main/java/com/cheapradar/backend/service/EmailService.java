@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 
 @Slf4j
 @Service
@@ -43,6 +44,7 @@ public class EmailService {
             html.append("<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse;'>");
             html.append("<tr><th>AIRLINE</th><th>DATE</th><th>TIME</th><th>FROM</th><th>TO</th><th>PROVIDER</th><th>PRICE</th><th>LINK</th></tr>");
             if (search.getTickets() != null) {
+                Collections.sort(search.getTickets());
                 for (Ticket ticket : search.getTickets()) {
                     html.append("<tr>");
                     html.append("<td><img src='")

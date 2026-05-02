@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "tickets")
-public class Ticket {
+public class Ticket implements Comparable<Ticket> {
     @Id
     @GeneratedValue
     private BigInteger id;
@@ -32,4 +32,8 @@ public class Ticket {
     private String airline;
     private String airlineLogo;
 
+    @Override
+    public int compareTo(Ticket other) {
+        return price.compareTo(other.price);
+    }
 }
