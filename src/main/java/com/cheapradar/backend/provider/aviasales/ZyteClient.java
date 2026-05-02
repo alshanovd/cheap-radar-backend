@@ -69,7 +69,7 @@ public class ZyteClient {
 
     private List<Map<String, Object>> aviasalesActions() {
         return List.of(
-                waitForSelectorAction(TRANSFERS_FIRST_ROW_SELECTOR),
+                waitForSelectorAction(TRANSFERS_FILTER_SELECTOR),
                 clickAction(TRANSFERS_FIRST_CHECKBOX_SELECTOR),
                 evaluateAction(WAIT_FOR_RESULTS_UPDATE_SCRIPT),
                 waitForSelectorAction(RESULTS_LIST_SELECTOR)
