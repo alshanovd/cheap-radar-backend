@@ -7,6 +7,7 @@ import com.cheapradar.backend.provider.dto.ProviderTicket;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,7 +32,7 @@ public class FlightSearchMediator {
     }
 
     public MediatorSearchResult search(List<String> providerSlugs, ProviderSearchRequest request) {
-        return search(providerSlugs, request, (providerSlug, tickets) -> {
+        return search(providerSlugs, request, (providerSlug, date, tickets) -> {
         });
     }
 
@@ -46,12 +47,14 @@ public class FlightSearchMediator {
                         .collect(Collectors.toCollection(LinkedHashSet::new));
 
         List<CompletableFuture<ProviderCallResult>> futures = requestedSlugs.stream()
-                .map(requestedSlug -> CompletableFuture.supplyAsync(() -> searchProvider(requestedSlug, request))
-                        .thenApply(result -> handleProviderResult(result, resultHandler))
-                        .exceptionally(exception -> {
-                            log.error("Provider '{}' result handling failed", requestedSlug, exception);
-                            return ProviderCallResult.failed(requestedSlug);
-                        }))
+                .flatMap(requestedSlug -> dates(request).stream()
+                        .map(date -> CompletableFuture.supplyAsync(() -> searchProvider(requestedSlug, request, date))
+                                .thenApply(result -> handleProviderResult(result, resultHandler))
+                                .exceptionally(exception -> {
+                                    log.error("Provider '{}' result handling failed for date {}",
+                                            requestedSlug, date, exception);
+                                    return ProviderCallResult.failed(requestedSlug, date);
+                                })))
                 .toList();
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -73,17 +76,27 @@ public class FlightSearchMediator {
                         .filter(result -> !result.success())
                         .map(ProviderCallResult::requestedSlug)
                         .collect(Collectors.toCollection(LinkedHashSet::new)))
+                .successfulProviderDates(results.stream()
+                        .filter(ProviderCallResult::success)
+                        .map(result -> new MediatorSearchResult.ProviderDateResult(
+                                result.requestedSlug(), result.date()))
+                        .collect(Collectors.toCollection(LinkedHashSet::new)))
+                .failedProviderDates(results.stream()
+                        .filter(result -> !result.success())
+                        .map(result -> new MediatorSearchResult.ProviderDateResult(
+                                result.requestedSlug(), result.date()))
+                        .collect(Collectors.toCollection(LinkedHashSet::new)))
                 .build();
     }
 
     private ProviderCallResult handleProviderResult(ProviderCallResult result, MediatorResultHandler resultHandler) {
         if (result.success()) {
-            resultHandler.onSuccess(result.requestedSlug(), result.tickets());
+            resultHandler.onSuccess(result.requestedSlug(), result.date(), result.tickets());
         }
         return result;
     }
 
-    private ProviderCallResult searchProvider(String requestedSlug, ProviderSearchRequest request) {
+    private ProviderCallResult searchProvider(String requestedSlug, ProviderSearchRequest request, LocalDate date) {
         FlightProvider provider = providers.get(requestedSlug);
         if (provider == null) {
             provider = providers.get(FALLBACK_PROVIDER);
@@ -92,33 +105,57 @@ public class FlightSearchMediator {
 
         if (provider == null) {
             log.error("Fallback provider '{}' is not configured", FALLBACK_PROVIDER);
-            return ProviderCallResult.failed(requestedSlug);
+            return ProviderCallResult.failed(requestedSlug, date);
         }
 
         try {
-            ProviderSearchResponse response = provider.search(request);
+            ProviderSearchResponse response = provider.search(singleDayRequest(request, date));
             List<ProviderTicket> tickets = response == null || response.getTickets() == null
                     ? List.of()
-                    : new ArrayList<>(response.getTickets());
-            return ProviderCallResult.succeeded(requestedSlug, tickets);
+                    : new ArrayList<>(response.getTickets()).stream()
+                            .filter(ticket -> ticket.getDate() != null && date.equals(ticket.getDate().toLocalDate()))
+                            .toList();
+            return ProviderCallResult.succeeded(requestedSlug, date, tickets);
         } catch (RuntimeException exception) {
             log.error("Provider '{}' failed while handling requested provider '{}'",
                     provider.slug(), requestedSlug, exception);
-            return ProviderCallResult.failed(requestedSlug);
+            return ProviderCallResult.failed(requestedSlug, date);
         }
+    }
+
+    private List<LocalDate> dates(ProviderSearchRequest request) {
+        List<LocalDate> dates = new ArrayList<>();
+        LocalDate date = request.getDateFrom();
+        LocalDate end = request.getDateTo();
+
+        while (!date.isAfter(end)) {
+            dates.add(date);
+            date = date.plusDays(1);
+        }
+
+        return dates;
+    }
+
+    private ProviderSearchRequest singleDayRequest(ProviderSearchRequest request, LocalDate date) {
+        return ProviderSearchRequest.builder()
+                .airportFrom(request.getAirportFrom())
+                .airportTo(request.getAirportTo())
+                .dateFrom(date)
+                .dateTo(date)
+                .build();
     }
 
     private String normalize(String slug) {
         return slug.trim().toLowerCase(Locale.ROOT);
     }
 
-    private record ProviderCallResult(String requestedSlug, boolean success, List<ProviderTicket> tickets) {
-        private static ProviderCallResult succeeded(String requestedSlug, List<ProviderTicket> tickets) {
-            return new ProviderCallResult(requestedSlug, true, tickets);
+    private record ProviderCallResult(String requestedSlug, LocalDate date, boolean success, List<ProviderTicket> tickets) {
+        private static ProviderCallResult succeeded(String requestedSlug, LocalDate date, List<ProviderTicket> tickets) {
+            return new ProviderCallResult(requestedSlug, date, true, tickets);
         }
 
-        private static ProviderCallResult failed(String requestedSlug) {
-            return new ProviderCallResult(requestedSlug, false, List.of());
+        private static ProviderCallResult failed(String requestedSlug, LocalDate date) {
+            return new ProviderCallResult(requestedSlug, date, false, List.of());
         }
     }
 }

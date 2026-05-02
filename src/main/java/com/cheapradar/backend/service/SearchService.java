@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -67,10 +68,11 @@ public class SearchService {
 
         ProviderSearchRequest providerSearchRequest = providerSearchRequestMapper.map(search);
         MediatorSearchResult mediatorResult = flightSearchMediator.search(search.getProviders(), providerSearchRequest,
-                (providerSlug, tickets) -> saveProviderTickets(searchId, providerSlug, tickets));
+                (providerSlug, date, tickets) -> saveProviderTickets(searchId, providerSlug, date, tickets));
 
         if (!mediatorResult.getFailedProviders().isEmpty()) {
-            log.warn("Search {} completed with failed providers {}", searchId, mediatorResult.getFailedProviders());
+            log.warn("Search {} completed with failed provider dates {}",
+                    searchId, mediatorResult.getFailedProviderDates());
         }
 
         Search completedSearch = withSearchLock(searchId, () -> {
@@ -101,14 +103,16 @@ public class SearchService {
         );
     }
 
-    private void saveProviderTickets(String searchId, String providerSlug, List<ProviderTicket> providerTickets) {
+    private void saveProviderTickets(String searchId, String providerSlug, LocalDate date,
+                                     List<ProviderTicket> providerTickets) {
         withSearchLock(searchId, () -> {
             Search search = getSearch(searchId);
             List<Ticket> tickets = providerTickets.stream()
+                    .filter(ticket -> ticket.getDate() != null && date.equals(ticket.getDate().toLocalDate()))
                     .map(ticketMapper::map)
                     .peek(ticket -> ticket.setProvider(providerSlug))
                     .toList();
-            search.replaceTicketsForProvider(providerSlug, tickets);
+            search.replaceTicketsForProviderAndDate(providerSlug, date, tickets);
             return searchRepository.save(search);
         });
     }

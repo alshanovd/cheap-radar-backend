@@ -18,6 +18,7 @@ import com.cheapradar.backend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -32,6 +33,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SearchServiceTest {
+    private static final LocalDate MAY_1 = LocalDate.of(2026, 5, 1);
+    private static final LocalDate MAY_2 = LocalDate.of(2026, 5, 2);
+
     private final SearchMapper searchMapper = mock(SearchMapper.class);
     private final TicketMapper ticketMapper = new TicketMapper();
     private final EmailService emailService = mock(EmailService.class);
@@ -53,10 +57,11 @@ class SearchServiceTest {
     );
 
     @Test
-    void persistsSuccessfulProviderResultsAndCompletesAfterFailures() {
+    void persistsSuccessfulProviderDateResultsAndKeepsProcessingWhenMoreChecksRemain() {
         Search search = search();
         ProviderSearchRequest request = ProviderSearchRequest.builder().build();
-        ProviderTicket googleTicket = providerTicket("google", "new-google");
+        ProviderTicket googleTicket = providerTicket("google", "new-google", MAY_1.atTime(12, 0));
+        ProviderTicket mismatchedTicket = providerTicket("google", "wrong-date-google", MAY_2.atTime(12, 0));
 
         when(searchRepository.findById("search-id")).thenReturn(Optional.of(search));
         when(searchRepository.save(any(Search.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -65,18 +70,21 @@ class SearchServiceTest {
         when(flightSearchMediator.search(eq(List.of("google", "test")), eq(request), any(MediatorResultHandler.class)))
                 .thenAnswer(invocation -> {
                     MediatorResultHandler handler = invocation.getArgument(2);
-                    handler.onSuccess("google", List.of(googleTicket));
+                    handler.onSuccess("google", MAY_1, List.of(googleTicket, mismatchedTicket));
                     return MediatorSearchResult.builder()
                             .tickets(List.of(googleTicket))
                             .successfulProviders(new LinkedHashSet<>(List.of("google")))
                             .failedProviders(new LinkedHashSet<>(List.of("test")))
+                            .failedProviderDates(new LinkedHashSet<>(List.of(
+                                    new MediatorSearchResult.ProviderDateResult("test", MAY_1)
+                            )))
                             .build();
                 });
 
         service.updateSearchResults(search);
 
-        assertEquals(SearchStatus.COMPLETED, search.getStatus());
-        assertEquals(List.of("old-aviasales", "new-google"), search.getTickets().stream()
+        assertEquals(SearchStatus.PROCESSING, search.getStatus());
+        assertEquals(List.of("old-google-next-day", "old-aviasales", "new-google"), search.getTickets().stream()
                 .map(Ticket::getLink)
                 .toList());
         verify(searchRepository, atLeast(3)).save(search);
@@ -89,24 +97,30 @@ class SearchServiceTest {
         search.setUserId(1L);
         search.setStatus(SearchStatus.COMPLETED);
         search.setProviders(List.of("google", "test"));
-        search.setTickets(List.of(ticket("google", "old-google"), ticket("aviasales", "old-aviasales")));
+        search.setTickets(List.of(
+                ticket("google", "old-google", MAY_1.atTime(10, 0)),
+                ticket("google", "old-google-next-day", MAY_2.atTime(10, 0)),
+                ticket("aviasales", "old-aviasales", MAY_1.atTime(10, 0))
+        ));
         search.setCheckIntervalHours(1);
         search.setCheckFinishAt(LocalDateTime.now().plusHours(2));
         return search;
     }
 
-    private static Ticket ticket(String provider, String link) {
+    private static Ticket ticket(String provider, String link, LocalDateTime date) {
         return Ticket.builder()
                 .provider(provider)
                 .link(link)
+                .date(date)
                 .price(BigDecimal.TEN)
                 .build();
     }
 
-    private static ProviderTicket providerTicket(String provider, String link) {
+    private static ProviderTicket providerTicket(String provider, String link, LocalDateTime date) {
         return ProviderTicket.builder()
                 .provider(provider)
                 .link(link)
+                .date(date)
                 .price(BigDecimal.ONE)
                 .build();
     }

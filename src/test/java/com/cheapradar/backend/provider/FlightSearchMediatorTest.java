@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,12 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlightSearchMediatorTest {
-    private final ProviderSearchRequest request = ProviderSearchRequest.builder()
-            .airportFrom("SYD")
-            .airportTo("MEL")
-            .dateFrom(LocalDate.of(2026, 5, 1))
-            .dateTo(LocalDate.of(2026, 5, 1))
-            .build();
+    private static final LocalDate MAY_1 = LocalDate.of(2026, 5, 1);
+    private static final LocalDate MAY_2 = LocalDate.of(2026, 5, 2);
+    private final ProviderSearchRequest request = request(MAY_1, MAY_1);
 
     @Test
     void normalizesRequestedProviderSlugs() {
@@ -73,7 +71,7 @@ class FlightSearchMediatorTest {
         ));
 
         CompletableFuture<MediatorSearchResult> result = CompletableFuture.supplyAsync(() ->
-                mediator.search(List.of("google", "test"), request, (providerSlug, tickets) -> {
+                mediator.search(List.of("google", "test"), request, (providerSlug, date, tickets) -> {
                     if ("google".equals(providerSlug)) {
                         callbackReceived.countDown();
                     }
@@ -96,10 +94,59 @@ class FlightSearchMediatorTest {
         ));
 
         MediatorSearchResult result = mediator.search(List.of("google", "test"), request,
-                (providerSlug, tickets) -> successfulCallbacks.add(providerSlug));
+                (providerSlug, date, tickets) -> successfulCallbacks.add(providerSlug));
 
         assertEquals(List.of("google"), successfulCallbacks);
         assertEquals(List.of("test"), result.getFailedProviders().stream().toList());
+    }
+
+    @Test
+    void searchesEveryDateWithSingleDayProviderRequests() {
+        RecordingProvider google = new RecordingProvider("google");
+        RecordingProvider test = new RecordingProvider("test");
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(google, test));
+
+        MediatorSearchResult result = mediator.search(List.of("google", "test"), request(MAY_1, MAY_2));
+
+        assertEquals(List.of(MAY_1, MAY_2), google.requestDates());
+        assertEquals(List.of(MAY_1, MAY_2), test.requestDates());
+        assertTrue(google.requests.stream()
+                .allMatch(request -> request.getDateFrom().equals(request.getDateTo())));
+        assertEquals(List.of("google", "test"), result.getSuccessfulProviders().stream().toList());
+        assertEquals(List.of(
+                "google:2026-05-01",
+                "google:2026-05-02",
+                "test:2026-05-01",
+                "test:2026-05-02"
+        ), result.getSuccessfulProviderDates().stream().map(this::providerDate).toList());
+    }
+
+    @Test
+    void tracksProviderDateFailuresSeparatelyFromProviderSummary() {
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(
+                new DateFailingProvider("google", MAY_2)
+        ));
+
+        MediatorSearchResult result = mediator.search(List.of("google"), request(MAY_1, MAY_2));
+
+        assertEquals(List.of("google"), result.getSuccessfulProviders().stream().toList());
+        assertEquals(List.of("google"), result.getFailedProviders().stream().toList());
+        assertEquals(List.of("google:2026-05-01"),
+                result.getSuccessfulProviderDates().stream().map(this::providerDate).toList());
+        assertEquals(List.of("google:2026-05-02"),
+                result.getFailedProviderDates().stream().map(this::providerDate).toList());
+    }
+
+    @Test
+    void filtersTicketsThatDoNotMatchRequestedDate() {
+        FlightSearchMediator mediator = new FlightSearchMediator(List.of(
+                new MismatchedDateProvider("google", MAY_2)
+        ));
+
+        MediatorSearchResult result = mediator.search(List.of("google"), request(MAY_1, MAY_1));
+
+        assertTrue(result.getTickets().isEmpty());
+        assertEquals(List.of("google"), result.getSuccessfulProviders().stream().toList());
     }
 
     private static class StubProvider implements FlightProvider {
@@ -121,10 +168,31 @@ class FlightSearchMediatorTest {
                             .provider(slug)
                             .airportFrom(request.getAirportFrom())
                             .airportTo(request.getAirportTo())
-                            .date(LocalDateTime.of(2026, 5, 1, 12, 0))
+                            .date(request.getDateFrom().atTime(12, 0))
                             .price(BigDecimal.TEN)
                             .build()))
                     .build();
+        }
+    }
+
+    private static class RecordingProvider extends StubProvider {
+        private final List<ProviderSearchRequest> requests = new CopyOnWriteArrayList<>();
+
+        private RecordingProvider(String slug) {
+            super(slug);
+        }
+
+        @Override
+        public ProviderSearchResponse search(ProviderSearchRequest request) {
+            requests.add(request);
+            return super.search(request);
+        }
+
+        private List<LocalDate> requestDates() {
+            return requests.stream()
+                    .map(ProviderSearchRequest::getDateFrom)
+                    .sorted()
+                    .toList();
         }
     }
 
@@ -164,5 +232,57 @@ class FlightSearchMediatorTest {
             }
             return super.search(request);
         }
+    }
+
+    private static class DateFailingProvider extends StubProvider {
+        private final LocalDate failingDate;
+
+        private DateFailingProvider(String slug, LocalDate failingDate) {
+            super(slug);
+            this.failingDate = failingDate;
+        }
+
+        @Override
+        public ProviderSearchResponse search(ProviderSearchRequest request) {
+            if (failingDate.equals(request.getDateFrom())) {
+                throw new RuntimeException("provider unavailable");
+            }
+            return super.search(request);
+        }
+    }
+
+    private static class MismatchedDateProvider extends StubProvider {
+        private final LocalDate ticketDate;
+
+        private MismatchedDateProvider(String slug, LocalDate ticketDate) {
+            super(slug);
+            this.ticketDate = ticketDate;
+        }
+
+        @Override
+        public ProviderSearchResponse search(ProviderSearchRequest request) {
+            return ProviderSearchResponse.builder()
+                    .tickets(List.of(ProviderTicket.builder()
+                            .provider(slug())
+                            .airportFrom(request.getAirportFrom())
+                            .airportTo(request.getAirportTo())
+                            .date(ticketDate.atTime(12, 0))
+                            .price(BigDecimal.TEN)
+                            .build()))
+                    .build();
+        }
+    }
+
+    private ProviderSearchRequest request(LocalDate dateFrom, LocalDate dateTo) {
+        return ProviderSearchRequest.builder()
+                .airportFrom("SYD")
+                .airportTo("MEL")
+                .dateFrom(dateFrom)
+                .dateTo(dateTo)
+                .build();
+    }
+
+    private String providerDate(MediatorSearchResult.ProviderDateResult result) {
+        return result.providerSlug() + ":" + result.date();
     }
 }

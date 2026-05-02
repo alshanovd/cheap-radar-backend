@@ -97,9 +97,19 @@ public class Search {
         this.status = SearchStatus.PROCESSING;
     }
 
+    public void replaceTicketsForProviderAndDate(String provider, LocalDate date, List<Ticket> providerTickets) {
+        List<Ticket> updatedTickets = tickets == null ? new ArrayList<>() : new ArrayList<>(tickets);
+        updatedTickets.removeIf(ticket -> Objects.equals(ticket.getProvider(), provider)
+                && ticket.getDate() != null
+                && date.equals(ticket.getDate().toLocalDate()));
+        updatedTickets.addAll(providerTickets);
+        this.tickets = updatedTickets;
+        this.status = SearchStatus.PROCESSING;
+    }
+
     public void completeRun() {
-        this.status = SearchStatus.COMPLETED;
         this.lastCheckedAt = LocalDateTime.now();
         setNextCheckAt();
+        this.status = nextCheckAt == null ? SearchStatus.COMPLETED : SearchStatus.PROCESSING;
     }
 }

@@ -9,13 +9,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 @Component
 public class GoogleFlightProvider implements FlightProvider {
@@ -43,40 +39,16 @@ public class GoogleFlightProvider implements FlightProvider {
     public ProviderSearchResponse search(ProviderSearchRequest request) {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         MultiValueMap<String, String> queryParams = getQueryParams(request);
+        queryParams.set("outbound_date", request.getDateFrom().format(dateFormatter));
 
-        List<LocalDate> dates = new ArrayList<>();
-        LocalDate start = request.getDateFrom();
-        LocalDate end = request.getDateTo();
+        GoogleSearchResponse response = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .queryParams(queryParams)
+                        .build())
+                .retrieve()
+                .body(GoogleSearchResponse.class);
 
-        int limit = properties.getMaximumRequests();
-        while (!start.isAfter(end) && limit > 0) {
-            dates.add(start);
-            start = start.plusDays(1);
-            limit--;
-        }
-
-        List<CompletableFuture<GoogleSearchResponse>> futures = dates.stream()
-                .map(date -> {
-                    MultiValueMap<String, String> paramsWithDate = new LinkedMultiValueMap<>(queryParams);
-                    paramsWithDate.set("outbound_date", date.format(dateFormatter));
-                    return CompletableFuture.supplyAsync(() ->
-                            restClient.get()
-                                    .uri(uriBuilder -> uriBuilder
-                                            .queryParams(paramsWithDate)
-                                            .build())
-                                    .retrieve()
-                                    .body(GoogleSearchResponse.class)
-                    );
-                })
-                .toList();
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        List<GoogleSearchResponse> allResponses = futures.stream()
-                .map(CompletableFuture::join)
-                .filter(Objects::nonNull)
-                .toList();
-
-        return googleSearchResponseMapper.map(allResponses);
+        return googleSearchResponseMapper.map(response == null ? List.of() : List.of(response));
     }
 
     private MultiValueMap<String, String> getQueryParams(ProviderSearchRequest request) {
