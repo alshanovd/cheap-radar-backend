@@ -9,7 +9,9 @@ import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Data
@@ -79,6 +81,24 @@ public class Search {
     public void setTickets(List<Ticket> tickets, SearchStatus status) {
         this.tickets = tickets;
         this.status = status;
+        this.lastCheckedAt = LocalDateTime.now();
+        setNextCheckAt();
+    }
+
+    public void markProcessing() {
+        this.status = SearchStatus.PROCESSING;
+    }
+
+    public void replaceTicketsForProvider(String provider, List<Ticket> providerTickets) {
+        List<Ticket> updatedTickets = tickets == null ? new ArrayList<>() : new ArrayList<>(tickets);
+        updatedTickets.removeIf(ticket -> Objects.equals(ticket.getProvider(), provider));
+        updatedTickets.addAll(providerTickets);
+        this.tickets = updatedTickets;
+        this.status = SearchStatus.PROCESSING;
+    }
+
+    public void completeRun() {
+        this.status = SearchStatus.COMPLETED;
         this.lastCheckedAt = LocalDateTime.now();
         setNextCheckAt();
     }

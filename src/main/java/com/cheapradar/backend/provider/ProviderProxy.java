@@ -31,6 +31,13 @@ public class ProviderProxy {
     }
 
     public ProviderAggregateResult search(List<String> providerSlugs, ProviderSearchRequest request) {
+        return search(providerSlugs, request, (providerSlug, tickets) -> {
+        });
+    }
+
+    public ProviderAggregateResult search(List<String> providerSlugs,
+                                          ProviderSearchRequest request,
+                                          ProviderResultHandler resultHandler) {
         Set<String> requestedSlugs = providerSlugs == null
                 ? Set.of()
                 : providerSlugs.stream()
@@ -39,7 +46,12 @@ public class ProviderProxy {
                         .collect(Collectors.toCollection(LinkedHashSet::new));
 
         List<CompletableFuture<ProviderCallResult>> futures = requestedSlugs.stream()
-                .map(requestedSlug -> CompletableFuture.supplyAsync(() -> searchProvider(requestedSlug, request)))
+                .map(requestedSlug -> CompletableFuture.supplyAsync(() -> searchProvider(requestedSlug, request))
+                        .thenApply(result -> handleProviderResult(result, resultHandler))
+                        .exceptionally(exception -> {
+                            log.error("Provider '{}' result handling failed", requestedSlug, exception);
+                            return ProviderCallResult.failed(requestedSlug);
+                        }))
                 .toList();
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -62,6 +74,13 @@ public class ProviderProxy {
                         .map(ProviderCallResult::requestedSlug)
                         .collect(Collectors.toCollection(LinkedHashSet::new)))
                 .build();
+    }
+
+    private ProviderCallResult handleProviderResult(ProviderCallResult result, ProviderResultHandler resultHandler) {
+        if (result.success()) {
+            resultHandler.onSuccess(result.requestedSlug(), result.tickets());
+        }
+        return result;
     }
 
     private ProviderCallResult searchProvider(String requestedSlug, ProviderSearchRequest request) {

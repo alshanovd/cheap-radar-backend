@@ -5,6 +5,8 @@ import com.cheapradar.backend.dto.search.TicketResponse;
 import com.cheapradar.backend.model.Search;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class SearchResultsResponseMapper {
     public SearchResultsResponse map(Search search) {
@@ -22,7 +24,7 @@ public class SearchResultsResponseMapper {
                 .nextCheckAt(search.getNextCheckAt())
                 .providers(search.getProviders())
                 .tickets(
-                        search.getTickets().stream().map(ticket -> TicketResponse.builder()
+                        (search.getTickets() == null ? List.of() : search.getTickets()).stream().map(ticket -> TicketResponse.builder()
                                         .provider(ticket.getProvider())
                                         .price(ticket.getPrice())
                                         .airline(ticket.getAirline())

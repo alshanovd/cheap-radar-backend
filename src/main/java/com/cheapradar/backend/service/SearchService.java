@@ -1,6 +1,8 @@
 package com.cheapradar.backend.service;
 
-import com.cheapradar.backend.dto.search.*;
+import com.cheapradar.backend.dto.search.CreateSearchRequest;
+import com.cheapradar.backend.dto.search.GetAllSearchesResponse;
+import com.cheapradar.backend.dto.search.SearchResultsResponse;
 import com.cheapradar.backend.mapper.ProviderSearchRequestMapper;
 import com.cheapradar.backend.mapper.SearchMapper;
 import com.cheapradar.backend.mapper.SearchResultsResponseMapper;
@@ -11,6 +13,7 @@ import com.cheapradar.backend.model.User;
 import com.cheapradar.backend.provider.ProviderProxy;
 import com.cheapradar.backend.provider.dto.ProviderAggregateResult;
 import com.cheapradar.backend.provider.dto.ProviderSearchRequest;
+import com.cheapradar.backend.provider.dto.ProviderTicket;
 import com.cheapradar.backend.repository.SearchRepository;
 import com.cheapradar.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +23,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Slf4j
 @Service
@@ -36,6 +41,7 @@ public class SearchService {
     private final ProviderProxy providerProxy;
     private final ProviderSearchRequestMapper providerSearchRequestMapper;
     private final SearchResultsResponseMapper searchResultsResponseMapper;
+    private final Map<String, Object> searchLocks = new ConcurrentHashMap<>();
 
     public Search createSearch(CreateSearchRequest request) {
         Search search = searchMapper.map(request);
@@ -49,24 +55,32 @@ public class SearchService {
     }
 
     public void updateSearchResults(Search search) {
+        updateSearchResults(search.getId());
+    }
+
+    public void updateSearchResults(String searchId) {
+        Search search = withSearchLock(searchId, () -> {
+            Search currentSearch = getSearch(searchId);
+            currentSearch.markProcessing();
+            return searchRepository.save(currentSearch);
+        });
+
         ProviderSearchRequest providerSearchRequest = providerSearchRequestMapper.map(search);
-        ProviderAggregateResult providerResult = providerProxy.search(search.getProviders(), providerSearchRequest);
+        ProviderAggregateResult providerResult = providerProxy.search(search.getProviders(), providerSearchRequest,
+                (providerSlug, tickets) -> saveProviderTickets(searchId, providerSlug, tickets));
 
-        List<Ticket> allTickets = providerResult.getTickets().stream()
-                .map(ticketMapper::map)
-                .collect(Collectors.toList());
+        if (!providerResult.getFailedProviders().isEmpty()) {
+            log.warn("Search {} completed with failed providers {}", searchId, providerResult.getFailedProviders());
+        }
 
-        search.setTickets(allTickets, getSearchStatus(providerResult));
-        searchRepository.save(search);
+        Search completedSearch = withSearchLock(searchId, () -> {
+            Search currentSearch = getSearch(searchId);
+            currentSearch.completeRun();
+            return searchRepository.save(currentSearch);
+        });
 
-        Long userId = search.getUserId();
-        if (userId != null && !allTickets.isEmpty()) {
-            Optional<User> user = userRepository.findById(userId);
-            if (user.isPresent()) {
-                emailService.sendSearchResultEmail(user.get(), search);
-            } else {
-                log.warn("User with id {} not found, cannot send email", userId);
-            }
+        if (!providerResult.getTickets().isEmpty()) {
+            sendSearchResultEmail(completedSearch);
         }
     }
 
@@ -87,13 +101,39 @@ public class SearchService {
         );
     }
 
-    private SearchStatus getSearchStatus(ProviderAggregateResult providerResult) {
-        if (providerResult.getSuccessfulProviders().isEmpty()) {
-            return SearchStatus.FAILED;
+    private void saveProviderTickets(String searchId, String providerSlug, List<ProviderTicket> providerTickets) {
+        withSearchLock(searchId, () -> {
+            Search search = getSearch(searchId);
+            List<Ticket> tickets = providerTickets.stream()
+                    .map(ticketMapper::map)
+                    .peek(ticket -> ticket.setProvider(providerSlug))
+                    .toList();
+            search.replaceTicketsForProvider(providerSlug, tickets);
+            return searchRepository.save(search);
+        });
+    }
+
+    private void sendSearchResultEmail(Search search) {
+        List<Ticket> tickets = search.getTickets() == null ? List.of() : search.getTickets();
+        Long userId = search.getUserId();
+        if (userId != null && !tickets.isEmpty()) {
+            Optional<User> user = userRepository.findById(userId);
+            if (user.isPresent()) {
+                emailService.sendSearchResultEmail(user.get(), search);
+            } else {
+                log.warn("User with id {} not found, cannot send email", userId);
+            }
         }
-        if (!providerResult.getFailedProviders().isEmpty()) {
-            return SearchStatus.PARTIAL;
+    }
+
+    private Search getSearch(String searchId) {
+        return searchRepository.findById(searchId)
+                .orElseThrow(() -> new RuntimeException("Search not found"));
+    }
+
+    private <T> T withSearchLock(String searchId, Supplier<T> action) {
+        synchronized (searchLocks.computeIfAbsent(searchId, id -> new Object())) {
+            return action.get();
         }
-        return SearchStatus.COMPLETED;
     }
 }
