@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GoogleFlightProviderTest {
     @Test
-    void requestsPricesInUsd() throws IOException {
+    void requestsCheapestFlightsInUsd() throws IOException {
         AtomicReference<String> query = new AtomicReference<>();
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/", exchange -> {
@@ -51,6 +51,7 @@ class GoogleFlightProviderTest {
             provider.search(request);
 
             assertTrue(query.get().contains("currency=USD"));
+            assertTrue(query.get().contains("sort_by=2"));
             assertFalse(query.get().contains("currency=AUD"));
         } finally {
             server.stop(0);

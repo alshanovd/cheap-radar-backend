@@ -14,7 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class AviasalesSearchResponseMapperTest {
-    private static final String SEARCH_URL = "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd";
+    private static final String SEARCH_URL = "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd&destination_airports=0";
 
     @Test
     void mapsTicketFromPriceAnchor() {

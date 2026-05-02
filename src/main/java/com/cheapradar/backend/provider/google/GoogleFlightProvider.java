@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 @Component
 public class GoogleFlightProvider implements FlightProvider {
     private static final String DATE_FORMAT = "yyyy-MM-dd";
+    private static final String PRICE_SORT = "2";
 
     private final RestClient restClient;
     private final GoogleClientProperties properties;
@@ -85,7 +86,7 @@ public class GoogleFlightProvider implements FlightProvider {
         multiMap.add("key", properties.getApiKey());
         multiMap.add("engine", "google_flights");
         multiMap.add("currency", "USD");
-        multiMap.add("sort_by", "2");
+        multiMap.add("sort_by", PRICE_SORT);
         multiMap.add("adults", "1");
         multiMap.add("stops", "1");
         multiMap.add("type", "2");

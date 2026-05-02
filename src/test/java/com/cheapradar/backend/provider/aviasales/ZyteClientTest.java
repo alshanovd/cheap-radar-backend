@@ -20,7 +20,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 class ZyteClientTest {
     private static final String ENDPOINT = "https://api.zyte.com/v1/extract";
-    private static final String SEARCH_URL = "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd";
+    private static final String SEARCH_URL = "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd&destination_airports=0";
 
     @Test
     void sendsZyteExtractionRequest() {
@@ -32,14 +32,14 @@ class ZyteClientTest {
                 .andExpect(header(HttpHeaders.AUTHORIZATION, basicAuth("test-key")))
                 .andExpect(content().json("""
                         {
-                          "url": "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd",
+                          "url": "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd&destination_airports=0",
                           "browserHtml": true,
                           "javascript": true
                         }
                         """))
                 .andRespond(withSuccess("""
                         {
-                          "url": "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd",
+                          "url": "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd&destination_airports=0",
                           "statusCode": 200,
                           "browserHtml": "<html></html>"
                         }
@@ -57,7 +57,7 @@ class ZyteClientTest {
         server.expect(requestTo(ENDPOINT))
                 .andRespond(withSuccess("""
                         {
-                          "url": "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd",
+                          "url": "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd&destination_airports=0",
                           "statusCode": 500,
                           "browserHtml": "<html></html>"
                         }

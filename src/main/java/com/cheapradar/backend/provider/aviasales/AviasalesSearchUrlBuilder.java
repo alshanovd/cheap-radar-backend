@@ -16,7 +16,7 @@ public class AviasalesSearchUrlBuilder {
     private final AviasalesClientProperties properties;
 
     public String build(ProviderSearchRequest request, LocalDate date) {
-        return "%s/%s%s%s1?currency=usd".formatted(
+        return "%s/%s%s%s1?currency=usd&destination_airports=0".formatted(
                 properties.getSearchBaseUrl(),
                 request.getAirportFrom().toUpperCase(Locale.ROOT),
                 date.format(DATE_FORMAT),

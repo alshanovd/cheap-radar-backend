@@ -20,6 +20,6 @@ class AviasalesSearchUrlBuilderTest {
 
         String url = builder.build(request, LocalDate.of(2026, 5, 3));
 
-        assertEquals("https://www.aviasales.ru/search/SYD0305BKK1?currency=usd", url);
+        assertEquals("https://www.aviasales.ru/search/SYD0305BKK1?currency=usd&destination_airports=0", url);
     }
 }
