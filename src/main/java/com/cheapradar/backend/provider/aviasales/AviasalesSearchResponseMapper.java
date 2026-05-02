@@ -72,9 +72,16 @@ public class AviasalesSearchResponseMapper {
     private List<ProviderTicket> map(AviasalesHtmlResponse response, ProviderSearchRequest request, String provider) {
         Document document = Jsoup.parse(normalize(response.html()));
 
-        return document.select("[data-test-id=price]").stream()
+        return priceElementsBeforeSoftTickets(document).stream()
                 .map(priceElement -> mapTicket(priceElement, response, request, provider))
                 .flatMap(Optional::stream)
+                .toList();
+    }
+
+    private List<Element> priceElementsBeforeSoftTickets(Document document) {
+        return document.getAllElements().stream()
+                .takeWhile(element -> !"soft-tickets-informer".equals(element.attr("data-test-id")))
+                .filter(element -> "price".equals(element.attr("data-test-id")))
                 .toList();
     }
 

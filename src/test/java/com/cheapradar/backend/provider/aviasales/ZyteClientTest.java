@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -37,6 +38,14 @@ class ZyteClientTest {
                           "javascript": true
                         }
                         """))
+                .andExpect(jsonPath("$.actions[0].action").value("waitForSelector"))
+                .andExpect(jsonPath("$.actions[0].selector.value")
+                        .value("[data-test-id=\"set-filter-transfers_count\"]"))
+                .andExpect(jsonPath("$.actions[1].action").value("click"))
+                .andExpect(jsonPath("$.actions[1].selector.value")
+                        .value("[data-test-id=\"set-filter-transfers_count\"] input[type=\"checkbox\"]"))
+                .andExpect(jsonPath("$.actions[2].action").value("evaluate"))
+                .andExpect(jsonPath("$.actions[2].source").isNotEmpty())
                 .andRespond(withSuccess("""
                         {
                           "url": "https://www.aviasales.ru/search/SYD0305BKK1?currency=usd&destination_airports=0",

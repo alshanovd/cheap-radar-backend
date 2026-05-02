@@ -7,8 +7,32 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
+import java.util.Map;
+
 @Component
 public class ZyteClient {
+    private static final String TRANSFERS_FILTER_SELECTOR = "[data-test-id=\"set-filter-transfers_count\"]";
+    private static final String TRANSFERS_FIRST_CHECKBOX_SELECTOR =
+            TRANSFERS_FILTER_SELECTOR + " input[type=\"checkbox\"]";
+    private static final String RESULTS_LIST_SELECTOR = "[data-test-id=\"search-results-items-list\"]";
+    private static final String WAIT_FOR_RESULTS_UPDATE_SCRIPT = """
+            new Promise(resolve => {
+              const target = document.querySelector('[data-test-id="search-results-items-list"]');
+              if (!target) {
+                resolve();
+                return;
+              }
+              const timeout = setTimeout(resolve, 5000);
+              const observer = new MutationObserver(() => {
+                clearTimeout(timeout);
+                observer.disconnect();
+                resolve();
+              });
+              observer.observe(target, { childList: true, subtree: true });
+            })
+            """;
+
     private final RestClient restClient;
 
     @Autowired
@@ -30,7 +54,7 @@ public class ZyteClient {
     public ZyteExtractResponse extract(String url) {
         ZyteExtractResponse response = restClient.post()
                 .uri("")
-                .body(new ZyteExtractRequest(url, true, true))
+                .body(new ZyteExtractRequest(url, true, true, aviasalesActions()))
                 .retrieve()
                 .body(ZyteExtractResponse.class);
 
@@ -39,6 +63,43 @@ public class ZyteClient {
         }
 
         return response;
+    }
+
+    private List<Map<String, Object>> aviasalesActions() {
+        return List.of(
+                waitForSelectorAction(TRANSFERS_FILTER_SELECTOR),
+                clickAction(TRANSFERS_FIRST_CHECKBOX_SELECTOR),
+                evaluateAction(WAIT_FOR_RESULTS_UPDATE_SCRIPT),
+                waitForSelectorAction(RESULTS_LIST_SELECTOR)
+        );
+    }
+
+    private Map<String, Object> waitForSelectorAction(String selector) {
+        return Map.of(
+                "action", "waitForSelector",
+                "selector", cssSelector(selector)
+        );
+    }
+
+    private Map<String, Object> clickAction(String selector) {
+        return Map.of(
+                "action", "click",
+                "selector", cssSelector(selector)
+        );
+    }
+
+    private Map<String, Object> evaluateAction(String source) {
+        return Map.of(
+                "action", "evaluate",
+                "source", source
+        );
+    }
+
+    private Map<String, Object> cssSelector(String value) {
+        return Map.of(
+                "type", "css",
+                "value", value
+        );
     }
 
     private boolean isSuccessful(ZyteExtractResponse response) {
