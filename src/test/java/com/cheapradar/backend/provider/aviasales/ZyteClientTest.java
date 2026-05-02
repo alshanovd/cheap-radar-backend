@@ -40,10 +40,11 @@ class ZyteClientTest {
                         """))
                 .andExpect(jsonPath("$.actions[0].action").value("waitForSelector"))
                 .andExpect(jsonPath("$.actions[0].selector.value")
-                        .value("[data-test-id=\"set-filter-transfers_count\"]"))
+                        .value("[data-test-id=\"set-filter-transfers_count\"] [data-test-id=\"set-filter-row-0\"]"))
                 .andExpect(jsonPath("$.actions[1].action").value("click"))
                 .andExpect(jsonPath("$.actions[1].selector.value")
-                        .value("[data-test-id=\"set-filter-transfers_count\"] input[type=\"checkbox\"]"))
+                        .value("[data-test-id=\"set-filter-transfers_count\"] [data-test-id=\"set-filter-row-0\"] "
+                                + "input[type=\"checkbox\"]"))
                 .andExpect(jsonPath("$.actions[2].action").value("evaluate"))
                 .andExpect(jsonPath("$.actions[2].source").isNotEmpty())
                 .andRespond(withSuccess("""

@@ -13,8 +13,10 @@ import java.util.Map;
 @Component
 public class ZyteClient {
     private static final String TRANSFERS_FILTER_SELECTOR = "[data-test-id=\"set-filter-transfers_count\"]";
+    private static final String TRANSFERS_FIRST_ROW_SELECTOR = TRANSFERS_FILTER_SELECTOR
+            + " [data-test-id=\"set-filter-row-0\"]";
     private static final String TRANSFERS_FIRST_CHECKBOX_SELECTOR =
-            TRANSFERS_FILTER_SELECTOR + " input[type=\"checkbox\"]";
+            TRANSFERS_FIRST_ROW_SELECTOR + " input[type=\"checkbox\"]";
     private static final String RESULTS_LIST_SELECTOR = "[data-test-id=\"search-results-items-list\"]";
     private static final String WAIT_FOR_RESULTS_UPDATE_SCRIPT = """
             new Promise(resolve => {
@@ -67,7 +69,7 @@ public class ZyteClient {
 
     private List<Map<String, Object>> aviasalesActions() {
         return List.of(
-                waitForSelectorAction(TRANSFERS_FILTER_SELECTOR),
+                waitForSelectorAction(TRANSFERS_FIRST_ROW_SELECTOR),
                 clickAction(TRANSFERS_FIRST_CHECKBOX_SELECTOR),
                 evaluateAction(WAIT_FOR_RESULTS_UPDATE_SCRIPT),
                 waitForSelectorAction(RESULTS_LIST_SELECTOR)
