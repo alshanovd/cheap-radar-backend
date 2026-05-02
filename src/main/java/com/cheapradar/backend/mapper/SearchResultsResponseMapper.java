@@ -3,6 +3,7 @@ package com.cheapradar.backend.mapper;
 import com.cheapradar.backend.dto.search.SearchResultsResponse;
 import com.cheapradar.backend.dto.search.TicketResponse;
 import com.cheapradar.backend.model.Search;
+import com.cheapradar.backend.model.Ticket;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -10,6 +11,8 @@ import java.util.List;
 @Component
 public class SearchResultsResponseMapper {
     public SearchResultsResponse map(Search search) {
+        List<Ticket> tickets = search.getTickets() == null ? List.of() : search.getTickets();
+
         return SearchResultsResponse.builder()
                 .searchId(search.getId())
                 .status(search.getStatus())
@@ -24,7 +27,7 @@ public class SearchResultsResponseMapper {
                 .nextCheckAt(search.getNextCheckAt())
                 .providers(search.getProviders())
                 .tickets(
-                        (search.getTickets() == null ? List.of() : search.getTickets()).stream().map(ticket -> TicketResponse.builder()
+                        tickets.stream().map(ticket -> TicketResponse.builder()
                                         .provider(ticket.getProvider())
                                         .price(ticket.getPrice())
                                         .airline(ticket.getAirline())
