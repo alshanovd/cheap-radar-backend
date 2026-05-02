@@ -71,7 +71,7 @@ class SearchServiceTest {
                 .thenAnswer(invocation -> {
                     MediatorResultHandler handler = invocation.getArgument(2);
                     handler.onSuccess("google", MAY_1, List.of(googleTicket, mismatchedTicket));
-                    assertEquals(SearchStatus.PROCESSING, search.getStatus());
+                    assertEquals(SearchStatus.ONGOING, search.getStatus());
                     return MediatorSearchResult.builder()
                             .tickets(List.of(googleTicket))
                             .successfulProviders(new LinkedHashSet<>(List.of("google")))
@@ -90,6 +90,20 @@ class SearchServiceTest {
                 .toList());
         verify(searchRepository, atLeast(3)).save(search);
         verify(emailService).sendSearchResultEmail(any(User.class), eq(search));
+    }
+
+    @Test
+    void scheduledUpdateSearchResultsOnlyFetchesDueCreatedAndScheduledSearches() {
+        when(searchRepository.findAllByStatusInAndNextCheckAtBefore(
+                eq(List.of(SearchStatus.CREATED, SearchStatus.SCHEDULED)),
+                any(LocalDateTime.class)))
+                .thenReturn(List.of());
+
+        service.scheduledUpdateSearchResults();
+
+        verify(searchRepository).findAllByStatusInAndNextCheckAtBefore(
+                eq(List.of(SearchStatus.CREATED, SearchStatus.SCHEDULED)),
+                any(LocalDateTime.class));
     }
 
     private static Search search() {

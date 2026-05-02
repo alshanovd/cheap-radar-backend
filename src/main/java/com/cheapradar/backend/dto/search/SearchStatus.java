@@ -1,5 +1,5 @@
 package com.cheapradar.backend.dto.search;
 
 public enum SearchStatus {
-    COMPLETED, PROCESSING, PARTIAL, FAILED, CREATED, SCHEDULED;
+    COMPLETED, ONGOING, PARTIAL, FAILED, CREATED, SCHEDULED;
 }

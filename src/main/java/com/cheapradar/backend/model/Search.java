@@ -88,8 +88,8 @@ public class Search {
         setNextCheckAt();
     }
 
-    public void markProcessing() {
-        this.status = SearchStatus.PROCESSING;
+    public void markOngoing() {
+        this.status = SearchStatus.ONGOING;
     }
 
     public void replaceTicketsForProvider(String provider, List<Ticket> providerTickets) {
@@ -97,7 +97,7 @@ public class Search {
         updatedTickets.removeIf(ticket -> Objects.equals(ticket.getProvider(), provider));
         updatedTickets.addAll(providerTickets);
         this.tickets = updatedTickets;
-        this.status = SearchStatus.PROCESSING;
+        this.status = SearchStatus.ONGOING;
     }
 
     public void replaceTicketsForProviderAndDate(String provider, LocalDate date, List<Ticket> providerTickets) {
@@ -107,7 +107,7 @@ public class Search {
                 && date.equals(ticket.getDate().toLocalDate()));
         updatedTickets.addAll(providerTickets);
         this.tickets = updatedTickets;
-        this.status = SearchStatus.PROCESSING;
+        this.status = SearchStatus.ONGOING;
     }
 
     public void completeRun() {

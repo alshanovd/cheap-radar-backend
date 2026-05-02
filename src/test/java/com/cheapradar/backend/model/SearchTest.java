@@ -41,7 +41,7 @@ class SearchTest {
 
         search.replaceTicketsForProvider("google", List.of(ticket("google", "new-google")));
 
-        assertEquals(SearchStatus.PROCESSING, search.getStatus());
+        assertEquals(SearchStatus.ONGOING, search.getStatus());
         assertEquals(List.of("old-aviasales", "new-google"), search.getTickets().stream()
                 .map(Ticket::getLink)
                 .toList());
@@ -62,7 +62,7 @@ class SearchTest {
                 ticket("google", "new-google", date.atTime(14, 0))
         ));
 
-        assertEquals(SearchStatus.PROCESSING, search.getStatus());
+        assertEquals(SearchStatus.ONGOING, search.getStatus());
         assertEquals(List.of("old-google-next-day", "old-aviasales", "new-google"), search.getTickets().stream()
                 .map(Ticket::getLink)
                 .toList());
@@ -71,7 +71,7 @@ class SearchTest {
     @Test
     void schedulesRunWhenAnotherCheckIsScheduled() {
         Search search = new Search();
-        search.setStatus(SearchStatus.PROCESSING);
+        search.setStatus(SearchStatus.ONGOING);
         search.setCheckIntervalHours(1);
         search.setCheckCount(2);
         search.setCompletedCheckCount(0);
@@ -86,7 +86,7 @@ class SearchTest {
     @Test
     void completesRunWhenNoNextCheckRemains() {
         Search search = new Search();
-        search.setStatus(SearchStatus.PROCESSING);
+        search.setStatus(SearchStatus.ONGOING);
         search.setCheckIntervalHours(1);
         search.setCheckCount(1);
         search.setCompletedCheckCount(0);

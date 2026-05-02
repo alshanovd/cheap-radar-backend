@@ -3,6 +3,7 @@ package com.cheapradar.backend.service;
 import com.cheapradar.backend.dto.search.CreateSearchRequest;
 import com.cheapradar.backend.dto.search.GetAllSearchesResponse;
 import com.cheapradar.backend.dto.search.SearchResultsResponse;
+import com.cheapradar.backend.dto.search.SearchStatus;
 import com.cheapradar.backend.mapper.ProviderSearchRequestMapper;
 import com.cheapradar.backend.mapper.SearchMapper;
 import com.cheapradar.backend.mapper.SearchResultsResponseMapper;
@@ -62,7 +63,7 @@ public class SearchService {
     public void updateSearchResults(String searchId) {
         Search search = withSearchLock(searchId, () -> {
             Search currentSearch = getSearch(searchId);
-            currentSearch.markProcessing();
+            currentSearch.markOngoing();
             return searchRepository.save(currentSearch);
         });
 
@@ -97,7 +98,9 @@ public class SearchService {
 
     @Scheduled(fixedRate = 600000)
     public void scheduledUpdateSearchResults() {
-        List<Search> searches = searchRepository.findAllByNextCheckAtBefore(LocalDateTime.now());
+        List<Search> searches = searchRepository.findAllByStatusInAndNextCheckAtBefore(
+                List.of(SearchStatus.CREATED, SearchStatus.SCHEDULED),
+                LocalDateTime.now());
         searches.forEach(search ->
                 CompletableFuture.runAsync(() -> updateSearchResults(search))
         );
