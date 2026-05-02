@@ -12,44 +12,7 @@ import java.util.Map;
 
 @Component
 public class ZyteClient {
-    private static final String TRANSFERS_FILTER_SELECTOR =
-            "[data-test-id=\"dynamic-filter-instance-transfers_count\"]";
-    private static final String TRANSFERS_FIRST_ROW_SELECTOR = "[data-test-id=\"set-filter-row-0\"]";
-    private static final String TRANSFERS_FIRST_CHECKBOX_SELECTOR =
-            TRANSFERS_FIRST_ROW_SELECTOR + " input[type=\"checkbox\"]";
     private static final String RESULTS_LIST_SELECTOR = "[data-test-id=\"search-results-items-list\"]";
-    private static final String CAPTURE_RESULTS_LIST_HTML_SCRIPT = """
-            (() => {
-              const target = document.querySelector('[data-test-id="search-results-items-list"]');
-              window.__cheapRadarResultsListHtml = target ? target.innerHTML : null;
-            })()
-            """;
-    private static final String WAIT_FOR_RESULTS_UPDATE_SCRIPT = """
-            new Promise(resolve => {
-              const initialHtml = window.__cheapRadarResultsListHtml;
-              const hasChanged = () => {
-                const target = document.querySelector('[data-test-id="search-results-items-list"]');
-                return !target || initialHtml === null || target.innerHTML !== initialHtml;
-              };
-              if (hasChanged()) {
-                resolve();
-                return;
-              }
-              let observer;
-              const done = () => {
-                clearTimeout(timeout);
-                observer?.disconnect();
-                resolve();
-              };
-              const timeout = setTimeout(done, 5000);
-              observer = new MutationObserver(() => {
-                if (hasChanged()) {
-                  done();
-                }
-              });
-              observer.observe(document.body, { childList: true, subtree: true });
-            })
-            """;
 
     private final RestClient restClient;
 
@@ -85,12 +48,6 @@ public class ZyteClient {
 
     private List<Map<String, Object>> aviasalesActions() {
         return List.of(
-                waitForSelectorAction(TRANSFERS_FILTER_SELECTOR),
-                waitForSelectorAction(TRANSFERS_FIRST_ROW_SELECTOR),
-                waitForSelectorAction(RESULTS_LIST_SELECTOR),
-                evaluateAction(CAPTURE_RESULTS_LIST_HTML_SCRIPT),
-                clickAction(TRANSFERS_FIRST_CHECKBOX_SELECTOR),
-                evaluateAction(WAIT_FOR_RESULTS_UPDATE_SCRIPT),
                 waitForSelectorAction(RESULTS_LIST_SELECTOR)
         );
     }
@@ -99,20 +56,6 @@ public class ZyteClient {
         return Map.of(
                 "action", "waitForSelector",
                 "selector", cssSelector(selector)
-        );
-    }
-
-    private Map<String, Object> clickAction(String selector) {
-        return Map.of(
-                "action", "click",
-                "selector", cssSelector(selector)
-        );
-    }
-
-    private Map<String, Object> evaluateAction(String source) {
-        return Map.of(
-                "action", "evaluate",
-                "source", source
         );
     }
 
