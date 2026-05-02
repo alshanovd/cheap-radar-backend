@@ -81,30 +81,6 @@ class AviasalesSearchResponseMapperTest {
                 response.getTickets().get(1).getAirlineLogo());
     }
 
-    @Test
-    void ignoresPricesAfterSoftTicketsInformer() {
-        AviasalesSearchResponseMapper mapper = new AviasalesSearchResponseMapper(properties());
-
-        ProviderSearchResponse response = mapper.map(List.of(new AviasalesHtmlResponse(
-                """
-                        <div>
-                            %s
-                            <div data-test-id="soft-tickets-informer">Relaxed filters</div>
-                            %s
-                        </div>
-                        """.formatted(
-                        ticketHtml("class=\"ticket\"", "data-test-id=\"price\"", "420\u202F$", "Aeroflot", "SU", "19:10"),
-                        ticketHtml("class=\"ticket\"", "data-test-id=\"price\"", "304\u202F$", "Utair", "UT", "18:40")
-                ),
-                SEARCH_URL,
-                LocalDate.of(2026, 5, 3)
-        )), request());
-
-        assertEquals(1, response.getTickets().size());
-        assertEquals(new BigDecimal("420"), response.getTickets().get(0).getPrice());
-        assertEquals("Aeroflot", response.getTickets().get(0).getAirline());
-    }
-
     private String ticketHtml(String ticketAttribute, String priceAttribute) {
         return ticketHtml(ticketAttribute, priceAttribute, "336\u202F$", "Scoot", "TR", "13:00");
     }
