@@ -35,8 +35,9 @@ public class Search {
     private LocalDateTime createdAt;
     private LocalDateTime lastCheckedAt;
     private LocalDateTime nextCheckAt;
-    private LocalDateTime checkFinishAt;
     private Integer checkIntervalHours;
+    private Integer checkCount;
+    private Integer completedCheckCount;
 
     @Convert(converter = StringListConverter.class)
     private List<String> providers;
@@ -46,8 +47,8 @@ public class Search {
     private List<Ticket> tickets;
 
     public Search(String airportFrom, String airportTo,
-                  LocalDate dateFrom, LocalDate dateTo, LocalDateTime checkFinishAt,
-                  Integer checkIntervalHours, List<String> providers) {
+                  LocalDate dateFrom, LocalDate dateTo,
+                  Integer checkIntervalHours, Integer checkCount, List<String> providers) {
 
         this.id = UUID.randomUUID().toString();
         this.userId = 1L;
@@ -56,33 +57,34 @@ public class Search {
         this.airportTo = airportTo;
         this.dateFrom = dateFrom;
         this.dateTo = dateTo;
-        this.checkFinishAt = checkFinishAt;
         this.checkIntervalHours = checkIntervalHours;
+        this.checkCount = checkCount;
+        this.completedCheckCount = 0;
         this.providers = providers;
 
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.lastCheckedAt = null;
-
-        var nextCheckAt = now.plusHours(checkIntervalHours);
-        if (nextCheckAt.isBefore(checkFinishAt)) {
-            this.nextCheckAt = now;
-        }
+        this.nextCheckAt = now;
     }
 
     private void setNextCheckAt() {
-        var nextCheckAt = lastCheckedAt.plusHours(checkIntervalHours);
-        if (nextCheckAt.isBefore(checkFinishAt)) {
-            this.nextCheckAt = nextCheckAt;
+        if (completedCheckCount != null && checkCount != null && completedCheckCount < checkCount) {
+            this.nextCheckAt = lastCheckedAt.plusHours(checkIntervalHours);
         } else {
             this.nextCheckAt = null;
         }
+    }
+
+    private void incrementCompletedCheckCount() {
+        this.completedCheckCount = completedCheckCount == null ? 1 : completedCheckCount + 1;
     }
 
     public void setTickets(List<Ticket> tickets, SearchStatus status) {
         this.tickets = tickets;
         this.status = status;
         this.lastCheckedAt = LocalDateTime.now();
+        incrementCompletedCheckCount();
         setNextCheckAt();
     }
 
@@ -110,7 +112,15 @@ public class Search {
 
     public void completeRun() {
         this.lastCheckedAt = LocalDateTime.now();
+        incrementCompletedCheckCount();
         setNextCheckAt();
         this.status = nextCheckAt == null ? SearchStatus.COMPLETED : SearchStatus.SCHEDULED;
+    }
+
+    public LocalDateTime getCheckFinishAt() {
+        if (createdAt == null || checkCount == null || checkIntervalHours == null) {
+            return null;
+        }
+        return createdAt.plusHours((long) (checkCount - 1) * checkIntervalHours);
     }
 }

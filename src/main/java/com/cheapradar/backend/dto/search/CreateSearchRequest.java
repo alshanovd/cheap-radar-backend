@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -28,8 +27,7 @@ public class CreateSearchRequest {
     private Integer checkIntervalHours;
 
     @JsonProperty(required = true)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime checkFinishAt;
+    private Integer checkCount;
 
     @JsonProperty(required = true)
     private List<String> providers;

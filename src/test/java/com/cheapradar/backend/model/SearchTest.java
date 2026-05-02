@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SearchTest {
@@ -20,14 +19,15 @@ class SearchTest {
                 "MEL",
                 LocalDate.of(2026, 5, 1),
                 LocalDate.of(2026, 5, 2),
-                LocalDateTime.now().plusDays(1),
                 1,
+                3,
                 List.of("google")
         );
 
         assertEquals(SearchStatus.CREATED, search.getStatus());
         assertNull(search.getLastCheckedAt());
-        assertNotNull(search.getNextCheckAt());
+        assertEquals(search.getCreatedAt(), search.getNextCheckAt());
+        assertEquals(0, search.getCompletedCheckCount());
     }
 
     @Test
@@ -73,11 +73,14 @@ class SearchTest {
         Search search = new Search();
         search.setStatus(SearchStatus.PROCESSING);
         search.setCheckIntervalHours(1);
-        search.setCheckFinishAt(LocalDateTime.now().plusHours(2));
+        search.setCheckCount(2);
+        search.setCompletedCheckCount(0);
 
         search.completeRun();
 
         assertEquals(SearchStatus.SCHEDULED, search.getStatus());
+        assertEquals(1, search.getCompletedCheckCount());
+        assertEquals(search.getLastCheckedAt().plusHours(1), search.getNextCheckAt());
     }
 
     @Test
@@ -85,11 +88,25 @@ class SearchTest {
         Search search = new Search();
         search.setStatus(SearchStatus.PROCESSING);
         search.setCheckIntervalHours(1);
-        search.setCheckFinishAt(LocalDateTime.now().plusMinutes(30));
+        search.setCheckCount(1);
+        search.setCompletedCheckCount(0);
 
         search.completeRun();
 
         assertEquals(SearchStatus.COMPLETED, search.getStatus());
+        assertEquals(1, search.getCompletedCheckCount());
+        assertNull(search.getNextCheckAt());
+    }
+
+    @Test
+    void calculatesCheckFinishAtFromCreatedAtCountAndInterval() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 4, 30, 9, 0);
+        Search search = new Search();
+        search.setCreatedAt(createdAt);
+        search.setCheckIntervalHours(3);
+        search.setCheckCount(4);
+
+        assertEquals(LocalDateTime.of(2026, 4, 30, 18, 0), search.getCheckFinishAt());
     }
 
     private static Ticket ticket(String provider, String link) {

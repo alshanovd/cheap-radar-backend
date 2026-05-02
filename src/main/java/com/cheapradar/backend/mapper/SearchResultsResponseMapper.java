@@ -22,6 +22,8 @@ public class SearchResultsResponseMapper {
                 .dateTo(search.getDateTo())
                 .checkFinishAt(search.getCheckFinishAt())
                 .checkIntervalHours(search.getCheckIntervalHours())
+                .checkCount(search.getCheckCount())
+                .completedCheckCount(search.getCompletedCheckCount())
                 .createdAt(search.getCreatedAt())
                 .lastCheckedAt(search.getLastCheckedAt())
                 .nextCheckAt(search.getNextCheckAt())

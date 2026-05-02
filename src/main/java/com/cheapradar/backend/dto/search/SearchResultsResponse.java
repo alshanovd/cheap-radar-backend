@@ -22,6 +22,8 @@ public class SearchResultsResponse {
     private LocalDateTime nextCheckAt;
     private LocalDateTime checkFinishAt;
     private Integer checkIntervalHours;
+    private Integer checkCount;
+    private Integer completedCheckCount;
     private List<String> providers;
 
     private List<TicketResponse> tickets;

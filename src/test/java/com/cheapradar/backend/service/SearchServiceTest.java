@@ -104,7 +104,8 @@ class SearchServiceTest {
                 ticket("aviasales", "old-aviasales", MAY_1.atTime(10, 0))
         ));
         search.setCheckIntervalHours(1);
-        search.setCheckFinishAt(LocalDateTime.now().plusHours(2));
+        search.setCheckCount(2);
+        search.setCompletedCheckCount(0);
         return search;
     }
 

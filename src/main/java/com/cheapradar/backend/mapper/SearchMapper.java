@@ -12,8 +12,8 @@ public class SearchMapper {
                 request.getAirportTo(),
                 request.getDateFrom(),
                 request.getDateTo(),
-                request.getCheckFinishAt(),
                 request.getCheckIntervalHours(),
+                request.getCheckCount(),
                 request.getProviders()
         );
     }
