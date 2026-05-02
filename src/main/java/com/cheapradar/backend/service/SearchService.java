@@ -71,7 +71,7 @@ public class SearchService {
     }
 
     public GetAllSearchesResponse getAllSearches(Long userId) {
-        List<Search> searches = searchRepository.findAllByUserId(userId);
+        List<Search> searches = searchRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
         return GetAllSearchesResponse.builder()
                         .searches(searches.stream()
                                 .map(searchResultsResponseMapper::map)

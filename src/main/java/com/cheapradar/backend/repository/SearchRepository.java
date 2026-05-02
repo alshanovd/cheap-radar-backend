@@ -9,7 +9,7 @@ import java.util.List;
 
 @Repository
 public interface SearchRepository extends JpaRepository<Search, String> {
-    List<Search> findAllByUserId(Long userId);
+    List<Search> findAllByUserIdOrderByCreatedAtDesc(Long userId);
     List<Search> findAllByNextCheckAtBefore(LocalDateTime time);
 
 }
