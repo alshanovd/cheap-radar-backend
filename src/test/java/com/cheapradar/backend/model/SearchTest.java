@@ -9,8 +9,27 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SearchTest {
+    @Test
+    void startsCreatedWithNoLastCheckedAtAndImmediateNextCheck() {
+        Search search = new Search(
+                "SYD",
+                "MEL",
+                LocalDate.of(2026, 5, 1),
+                LocalDate.of(2026, 5, 2),
+                LocalDateTime.now().plusDays(1),
+                1,
+                List.of("google")
+        );
+
+        assertEquals(SearchStatus.CREATED, search.getStatus());
+        assertNull(search.getLastCheckedAt());
+        assertNotNull(search.getNextCheckAt());
+    }
+
     @Test
     void replacesTicketsForProviderAndKeepsOtherProviders() {
         Search search = new Search();
@@ -50,7 +69,7 @@ class SearchTest {
     }
 
     @Test
-    void keepsProcessingWhenAnotherCheckIsScheduled() {
+    void schedulesRunWhenAnotherCheckIsScheduled() {
         Search search = new Search();
         search.setStatus(SearchStatus.PROCESSING);
         search.setCheckIntervalHours(1);
@@ -58,7 +77,7 @@ class SearchTest {
 
         search.completeRun();
 
-        assertEquals(SearchStatus.PROCESSING, search.getStatus());
+        assertEquals(SearchStatus.SCHEDULED, search.getStatus());
     }
 
     @Test

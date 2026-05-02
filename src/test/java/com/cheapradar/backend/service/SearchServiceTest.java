@@ -71,6 +71,7 @@ class SearchServiceTest {
                 .thenAnswer(invocation -> {
                     MediatorResultHandler handler = invocation.getArgument(2);
                     handler.onSuccess("google", MAY_1, List.of(googleTicket, mismatchedTicket));
+                    assertEquals(SearchStatus.PROCESSING, search.getStatus());
                     return MediatorSearchResult.builder()
                             .tickets(List.of(googleTicket))
                             .successfulProviders(new LinkedHashSet<>(List.of("google")))
@@ -83,7 +84,7 @@ class SearchServiceTest {
 
         service.updateSearchResults(search);
 
-        assertEquals(SearchStatus.PROCESSING, search.getStatus());
+        assertEquals(SearchStatus.SCHEDULED, search.getStatus());
         assertEquals(List.of("old-google-next-day", "old-aviasales", "new-google"), search.getTickets().stream()
                 .map(Ticket::getLink)
                 .toList());

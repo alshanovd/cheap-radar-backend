@@ -24,6 +24,7 @@ public class Search {
     @Id
     private String id;
     private Long userId;
+    @Enumerated(EnumType.STRING)
     private SearchStatus status;
 
     private String airportFrom;
@@ -50,7 +51,7 @@ public class Search {
 
         this.id = UUID.randomUUID().toString();
         this.userId = 1L;
-        this.status = SearchStatus.PROCESSING;
+        this.status = SearchStatus.CREATED;
         this.airportFrom = airportFrom;
         this.airportTo = airportTo;
         this.dateFrom = dateFrom;
@@ -61,11 +62,11 @@ public class Search {
 
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
-        this.lastCheckedAt = now;
+        this.lastCheckedAt = null;
 
-        var nextCheckAt = lastCheckedAt.plusHours(checkIntervalHours);
+        var nextCheckAt = now.plusHours(checkIntervalHours);
         if (nextCheckAt.isBefore(checkFinishAt)) {
-            this.nextCheckAt = LocalDateTime.now();
+            this.nextCheckAt = now;
         }
     }
 
@@ -110,6 +111,6 @@ public class Search {
     public void completeRun() {
         this.lastCheckedAt = LocalDateTime.now();
         setNextCheckAt();
-        this.status = nextCheckAt == null ? SearchStatus.COMPLETED : SearchStatus.PROCESSING;
+        this.status = nextCheckAt == null ? SearchStatus.COMPLETED : SearchStatus.SCHEDULED;
     }
 }
