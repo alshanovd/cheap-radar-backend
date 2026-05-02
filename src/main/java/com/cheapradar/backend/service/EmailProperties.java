@@ -10,4 +10,5 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "application.mail")
 public class EmailProperties {
     private String sender;
+    private String lookupsUrl;
 }
