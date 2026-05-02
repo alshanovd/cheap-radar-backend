@@ -40,7 +40,7 @@ public class EmailService {
             html.append("<h2><a href='")
                 .append(properties.getLookupsUrl())
                 .append(search.getId())
-                .append("' target='_blank' rel='noopener noreferrer' style='color: #2a7ae2; text-decoration: none;'>Your Latest Search Results</a></h2>");
+                .append("' target='_blank' rel='noopener noreferrer' style='color: #2a7ae2; text-decoration: underline;'>Your Latest Search Results</a></h2>");
             html.append("<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse;'>");
             html.append("<tr><th>AIRLINE</th><th>DATE</th><th>TIME</th><th>FROM</th><th>TO</th><th>PROVIDER</th><th>PRICE</th><th>LINK</th></tr>");
             if (search.getTickets() != null) {
