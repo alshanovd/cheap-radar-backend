@@ -25,11 +25,14 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SearchServiceTest {
@@ -106,11 +109,70 @@ class SearchServiceTest {
                 any(LocalDateTime.class));
     }
 
+    @Test
+    void skipsSearchThatIsAlreadyOngoing() {
+        Search search = search();
+        search.setStatus(SearchStatus.ONGOING);
+        when(searchRepository.findById("search-id")).thenReturn(Optional.of(search));
+
+        service.updateSearchResults(search);
+
+        verifyNoInteractions(providerSearchRequestMapper, flightSearchMediator);
+    }
+
+    @Test
+    void reschedulesSearchWhenProviderSearchThrowsAfterRunStarts() {
+        Search search = search();
+        ProviderSearchRequest request = ProviderSearchRequest.builder().build();
+
+        when(searchRepository.findById("search-id")).thenReturn(Optional.of(search));
+        when(searchRepository.save(any(Search.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(providerSearchRequestMapper.map(search)).thenReturn(request);
+        when(flightSearchMediator.search(eq(List.of("google", "test")), eq(request), any(MediatorResultHandler.class)))
+                .thenThrow(new RuntimeException("provider failed"));
+
+        service.updateSearchResults(search);
+
+        assertEquals(SearchStatus.SCHEDULED, search.getStatus());
+        assertEquals(1, search.getCompletedCheckCount());
+        assertNotNull(search.getLastCheckedAt());
+        assertEquals(search.getLastCheckedAt().plusHours(1), search.getNextCheckAt());
+        verify(emailService, never()).sendSearchResultEmail(any(User.class), any(Search.class));
+    }
+
+    @Test
+    void reschedulesSearchWhenAllProviderDatesFail() {
+        Search search = search();
+        ProviderSearchRequest request = ProviderSearchRequest.builder().build();
+
+        when(searchRepository.findById("search-id")).thenReturn(Optional.of(search));
+        when(searchRepository.save(any(Search.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(providerSearchRequestMapper.map(search)).thenReturn(request);
+        when(flightSearchMediator.search(eq(List.of("google", "test")), eq(request), any(MediatorResultHandler.class)))
+                .thenReturn(MediatorSearchResult.builder()
+                        .tickets(List.of())
+                        .successfulProviders(new LinkedHashSet<>())
+                        .failedProviders(new LinkedHashSet<>(List.of("google", "test")))
+                        .successfulProviderDates(new LinkedHashSet<>())
+                        .failedProviderDates(new LinkedHashSet<>(List.of(
+                                new MediatorSearchResult.ProviderDateResult("google", MAY_1),
+                                new MediatorSearchResult.ProviderDateResult("test", MAY_1)
+                        )))
+                        .build());
+
+        service.updateSearchResults(search);
+
+        assertEquals(SearchStatus.SCHEDULED, search.getStatus());
+        assertEquals(1, search.getCompletedCheckCount());
+        assertNotNull(search.getNextCheckAt());
+        verify(emailService, never()).sendSearchResultEmail(any(User.class), any(Search.class));
+    }
+
     private static Search search() {
         Search search = new Search();
         search.setId("search-id");
         search.setUserId(1L);
-        search.setStatus(SearchStatus.COMPLETED);
+        search.setStatus(SearchStatus.CREATED);
         search.setProviders(List.of("google", "test"));
         search.setTickets(List.of(
                 ticket("google", "old-google", MAY_1.atTime(10, 0)),

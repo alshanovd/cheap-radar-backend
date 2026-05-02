@@ -63,28 +63,62 @@ public class SearchService {
     public void updateSearchResults(String searchId) {
         Search search = withSearchLock(searchId, () -> {
             Search currentSearch = getSearch(searchId);
+            if (!currentSearch.isRunnable()) {
+                log.info("Skipping search {} with status {}", searchId, currentSearch.getStatus());
+                return null;
+            }
             currentSearch.markOngoing();
             return searchRepository.save(currentSearch);
         });
-
-        ProviderSearchRequest providerSearchRequest = providerSearchRequestMapper.map(search);
-        MediatorSearchResult mediatorResult = flightSearchMediator.search(search.getProviders(), providerSearchRequest,
-                (providerSlug, date, tickets) -> saveProviderTickets(searchId, providerSlug, date, tickets));
-
-        if (!mediatorResult.getFailedProviders().isEmpty()) {
-            log.warn("Search {} completed with failed provider dates {}",
-                    searchId, mediatorResult.getFailedProviderDates());
+        if (search == null) {
+            return;
         }
 
-        Search completedSearch = withSearchLock(searchId, () -> {
-            Search currentSearch = getSearch(searchId);
-            currentSearch.completeRun();
-            return searchRepository.save(currentSearch);
-        });
+        try {
+            ProviderSearchRequest providerSearchRequest = providerSearchRequestMapper.map(search);
+            MediatorSearchResult mediatorResult = flightSearchMediator.search(search.getProviders(), providerSearchRequest,
+                    (providerSlug, date, tickets) -> saveProviderTickets(searchId, providerSlug, date, tickets));
 
-        if (!mediatorResult.getTickets().isEmpty()) {
-            sendSearchResultEmail(completedSearch);
+            if (!mediatorResult.getFailedProviders().isEmpty()) {
+                log.warn("Search {} completed with failed provider dates {}",
+                        searchId, mediatorResult.getFailedProviderDates());
+            }
+
+            if (allProviderDatesFailed(mediatorResult)) {
+                withSearchLock(searchId, () -> {
+                    Search currentSearch = getSearch(searchId);
+                    currentSearch.failRun();
+                    return searchRepository.save(currentSearch);
+                });
+                return;
+            }
+
+            Search completedSearch = withSearchLock(searchId, () -> {
+                Search currentSearch = getSearch(searchId);
+                currentSearch.completeRun();
+                return searchRepository.save(currentSearch);
+            });
+
+            if (!mediatorResult.getTickets().isEmpty()) {
+                sendSearchResultEmail(completedSearch);
+            }
+        } catch (RuntimeException exception) {
+            log.error("Search {} failed while updating results", searchId, exception);
+            withSearchLock(searchId, () -> {
+                Search currentSearch = getSearch(searchId);
+                if (currentSearch.getStatus() == SearchStatus.ONGOING) {
+                    currentSearch.failRun();
+                    return searchRepository.save(currentSearch);
+                }
+                return currentSearch;
+            });
         }
+    }
+
+    private boolean allProviderDatesFailed(MediatorSearchResult mediatorResult) {
+        return mediatorResult.getTickets().isEmpty()
+                && !mediatorResult.getFailedProviderDates().isEmpty()
+                && mediatorResult.getSuccessfulProviderDates().isEmpty();
     }
 
     public GetAllSearchesResponse getAllSearches(Long userId) {

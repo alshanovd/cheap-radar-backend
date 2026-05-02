@@ -99,6 +99,36 @@ class SearchTest {
     }
 
     @Test
+    void reschedulesFailedRunWhenAnotherCheckRemains() {
+        Search search = new Search();
+        search.setStatus(SearchStatus.ONGOING);
+        search.setCheckIntervalHours(1);
+        search.setCheckCount(2);
+        search.setCompletedCheckCount(0);
+
+        search.failRun();
+
+        assertEquals(SearchStatus.SCHEDULED, search.getStatus());
+        assertEquals(1, search.getCompletedCheckCount());
+        assertEquals(search.getLastCheckedAt().plusHours(1), search.getNextCheckAt());
+    }
+
+    @Test
+    void failsRunWhenNoNextCheckRemains() {
+        Search search = new Search();
+        search.setStatus(SearchStatus.ONGOING);
+        search.setCheckIntervalHours(1);
+        search.setCheckCount(1);
+        search.setCompletedCheckCount(0);
+
+        search.failRun();
+
+        assertEquals(SearchStatus.FAILED, search.getStatus());
+        assertEquals(1, search.getCompletedCheckCount());
+        assertNull(search.getNextCheckAt());
+    }
+
+    @Test
     void calculatesCheckFinishAtFromCreatedAtCountAndInterval() {
         LocalDateTime createdAt = LocalDateTime.of(2026, 4, 30, 9, 0);
         Search search = new Search();

@@ -92,6 +92,17 @@ public class Search {
         this.status = SearchStatus.ONGOING;
     }
 
+    public boolean isRunnable() {
+        return status == SearchStatus.CREATED || status == SearchStatus.SCHEDULED;
+    }
+
+    public void failRun() {
+        this.lastCheckedAt = LocalDateTime.now();
+        incrementCompletedCheckCount();
+        setNextCheckAt();
+        this.status = nextCheckAt == null ? SearchStatus.FAILED : SearchStatus.SCHEDULED;
+    }
+
     public void replaceTicketsForProvider(String provider, List<Ticket> providerTickets) {
         List<Ticket> updatedTickets = tickets == null ? new ArrayList<>() : new ArrayList<>(tickets);
         updatedTickets.removeIf(ticket -> Objects.equals(ticket.getProvider(), provider));
