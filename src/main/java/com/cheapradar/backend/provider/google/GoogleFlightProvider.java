@@ -84,7 +84,7 @@ public class GoogleFlightProvider implements FlightProvider {
         multiMap.add("arrival_id", request.getAirportTo());
         multiMap.add("key", properties.getApiKey());
         multiMap.add("engine", "google_flights");
-        multiMap.add("currency", "AUD");
+        multiMap.add("currency", "USD");
         multiMap.add("sort_by", "2");
         multiMap.add("adults", "1");
         multiMap.add("stops", "1");
