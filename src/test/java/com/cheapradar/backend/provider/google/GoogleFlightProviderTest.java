@@ -52,6 +52,7 @@ class GoogleFlightProviderTest {
 
             assertTrue(query.get().contains("currency=USD"));
             assertTrue(query.get().contains("sort_by=2"));
+            assertTrue(query.get().contains("stops=0"));
             assertFalse(query.get().contains("currency=AUD"));
         } finally {
             server.stop(0);
