@@ -20,10 +20,10 @@ public class SettingService {
     public SettingsResponse getSettings(BigInteger userId) {
         Optional<Setting> optional = repository.getByUserId(userId);
         if (optional.isEmpty()) {
-            return new SettingsResponse("USD", true, "dark");
+            return new SettingsResponse("USD", true);
         }
         Setting setting = optional.get();
-        return new SettingsResponse(setting.getCurrency(), setting.isNotifications(), setting.getTheme());
+        return new SettingsResponse(setting.getCurrency(), setting.isNotifications());
     }
 
     public SettingsResponse saveSettings(SettingsRequest request) {
@@ -47,11 +47,8 @@ public class SettingService {
         if (request.getNotifications() != null) {
             setting.setNotifications(request.getNotifications());
         }
-        if (request.getTheme() != null) {
-            setting.setTheme(request.getTheme());
-        }
 
         Setting savedSetting = repository.save(setting);
-        return new SettingsResponse(savedSetting.getCurrency(), savedSetting.isNotifications(), savedSetting.getTheme());
+        return new SettingsResponse(savedSetting.getCurrency(), savedSetting.isNotifications());
     }
 }

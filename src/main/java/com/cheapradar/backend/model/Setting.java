@@ -23,7 +23,6 @@ public class Setting {
     private BigInteger userId;
     private String currency;
     private boolean notifications;
-    private String theme;
 
     public Setting() {
         this.createdAt = ZonedDateTime.now();

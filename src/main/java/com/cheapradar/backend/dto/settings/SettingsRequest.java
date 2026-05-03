@@ -11,5 +11,4 @@ public class SettingsRequest {
     private BigInteger userId;
     private String currency;
     private Boolean notifications;
-    private String theme;
 }

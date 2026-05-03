@@ -8,5 +8,4 @@ import lombok.Data;
 public class SettingsResponse {
     private String currency;
     private boolean notifications;
-    private String theme;
 }
