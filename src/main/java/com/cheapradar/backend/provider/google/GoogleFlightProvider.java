@@ -62,7 +62,7 @@ public class GoogleFlightProvider implements FlightProvider {
         multiMap.add("adults", "1");
         multiMap.add("stops", "0");
         multiMap.add("type", "2");
-        multiMap.add("gl", "au");
+        multiMap.add("gl", "us");
         multiMap.add("hl", "en");
         return multiMap;
     }
